@@ -1,13 +1,14 @@
+import "dotenv/config";
 import express from "express";
-import { toNodeHandler } from "better-auth/node";
+import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import cors from "cors";
-import {auth} from "./lib/auth.js";
-import dotenv from "dotenv" ;
-dotenv.config();
+import { auth } from "./lib/auth.js";
 
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 8080;
+
+app.use(express.json());
 
 app.use(
   cors({
@@ -20,13 +21,11 @@ app.use(
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
-app.use(express.json());
-
 app.get("/api/me" , async (req, res)=>{
     const session = await auth.api.getSession({
     headers : fromNodeHeaders (req.headers),
     });
-    return res.status(session);
+  return res.json(session);
 })
 
 app.listen(PORT , ()=>{

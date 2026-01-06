@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { PrismaClient } from "@prisma/client";
@@ -8,12 +9,13 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
+    baseURL: process.env.BETTER_AUTH_BASE_URL || `http://localhost:${process.env.PORT || 8080}`,
     basePath:"/api/auth" ,
     trustedOrigins : ["http://localhost:3000"],
     socialProviders :{
         github : {
             clientId : process.env.GITHUB_CLIENT_ID ,
-            clientSecret: process.env.GiITHUB_CLIENT_SECRET
+            clientSecret: process.env.GITHUB_CLIENT_SECRET
         }
     }
 });
