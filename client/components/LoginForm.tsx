@@ -14,7 +14,7 @@ const LoginForm = ()=>{
     return(
         <div className ="flex flex-col gap-6 justify-center items-center">
             <div className = "flex flex-col items-center justify-center space-y-4">
-                <Image src ={"/login.svg"} alt = "Login" height ={500} width ={500}/>
+                <Image src ={"/login1.png"} alt = "Login" height ={500} width ={500}/>
                 <h1 className ="text-6xl font-extrabold text-indigo-400">
                     Welcome Back! to Orbital CLI
                 </h1>
@@ -35,9 +35,9 @@ const LoginForm = ()=>{
                                     provider : "github" ,
                                     callbackURL:"http://localhost:3000"
                                 })} >
-                                <Image src ={"/github.svg"} alt ="github" height ={16 } width ={16}
+                                <Image src ={"/github.png"} alt ="github" height ={18 } width ={18}
                                 className = "size-4 dark:invert" />
-                                Continue With Github /</Button>
+                                Continue With Github </Button>
                         </div>
                     </div>
                 </CardContent>
