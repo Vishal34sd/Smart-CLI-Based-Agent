@@ -29,14 +29,14 @@ const LoginForm = ()=>{
                         <div className ="flex flex-col gap-4">
                             <Button 
                                 variant ={"outline"}
-                                className ="w-full h-full"
+                                className ="w-full h-full hover:cursor-pointer"
                                 type= "button" 
                                 onClick ={()=> authClient.signIn.social({
                                     provider : "github" ,
                                     callbackURL:"http://localhost:3000"
                                 })} >
                                 <Image src ={"/github.png"} alt ="github" height ={18 } width ={18}
-                                className = "size-4 dark:invert" />
+                                className = "size-4 dark:invert hover:cursor-pointer" />
                                 Continue With Github </Button>
                         </div>
                     </div>
