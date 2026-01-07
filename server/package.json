@@ -4,6 +4,9 @@
   "description": "",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "orbital" :"./src/cli/main.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.js"

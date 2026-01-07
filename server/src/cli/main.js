@@ -17,7 +17,21 @@ const main = async()=>{
         )
     )
 
-    console.log(chalk.red(" A CLI Based AI Tool \n"))
+    console.log(chalk.red(" A CLI Based AI Tool \n"));
+
+    const program = new Command("orbital");
+
+    program.version("0.0.1").
+    description("Orbital CLI - A CLI Based AI Tool");
+
+    program.action(()=>{
+        program.help();
+    });
+
+    program.parse();
 }
 
-main();
+main().catch((err)=>{
+    console.log(chalk.red("Error running orbital CLI : " , err));
+    process.exit(1);
+})
