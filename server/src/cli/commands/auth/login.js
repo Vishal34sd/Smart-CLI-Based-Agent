@@ -1,14 +1,15 @@
 import { cancel, confirm, intro, isCancel } from "@clack/prompts";
 import chalk from "chalk";
 import { Command } from "commander";
-import fs from "node:fs/promises";
 import open from "open";
 import os from "os";
 import path from "path";
 import yoctoSpinner from "yocto-spinner";
 import * as z from "zod";
 import dotenv from "dotenv";
-import prisma from "../../../lib/db.js";
+import { createAuthClient } from "better-auth/client";
+import { deviceAuthorizationClient } from "better-auth/client/plugins";
+import { logger } from "better-auth";
 
 dotenv.config();
 
@@ -33,28 +34,73 @@ export const loginAction = async (cmdOptions) => {
 
   intro(chalk.bold("Auth CLI Login"));
 
-  // TODO: Replace with real token logic
-  const existingToken = false;
-  const expired = false;
+  const authClient = createAuthClient({
+    baseURL: serverUrl,
+    plugins: [
+      deviceAuthorizationClient({
+        provider: "github",
+      }),
+    ],
+  });
 
-  if (existingToken && !expired) {
-    const shouldReAuth = await confirm({
-      message: "You are already logged in. Do you want to login again?",
-      initialValue: false,
+  const spinner = yoctoSpinner({
+    text: "Requesting device authorization...",
+  }).start();
+
+  try {
+    const { data, error } = await authClient.device.code
+    ({
+      client_id: clientId,
+      scope: "openid profile email",
     });
 
-    if (isCancel(shouldReAuth)) {
-      cancel("Login cancelled");
-      process.exit(0);
+    spinner.stop();
+
+    if (error || !data) {
+      logger.error(
+        `Failed to request device authorization: ${error?.error_description}`
+      );
+      process.exit(1);
     }
 
-    if (!shouldReAuth) {
-      cancel("Login aborted");
-      process.exit(0);
+    const {
+      user_code,
+      verification_uri,
+      verification_uri_complete,
+      expires_in,
+    } = data;
+
+    console.log(chalk.cyan("\nDevice Authorization Required"));
+    console.log(
+      `Visit: ${chalk.underline.blue(
+        verification_uri_complete || verification_uri
+      )}`
+    );
+    console.log(`Enter Code: ${chalk.bold.green(user_code)}\n`);
+
+    const shouldOpen = await confirm({
+      message: "Open browser automatically?",
+      initialValue: true,
+    });
+
+    if (!isCancel(shouldOpen) && shouldOpen) {
+      const uriToOpen =
+        verification_uri_complete || verification_uri;
+      await open(uriToOpen);
     }
+
+    console.log(
+      chalk.gray(
+        `Waiting for authorization (expires in ${Math.floor(
+          expires_in / 60
+        )} minutes)...`
+      )
+    );
+  } catch (err) {
+    spinner.stop();
+    console.error(chalk.red("Login failed:"), err);
+    process.exit(1);
   }
-
-  
 };
 
 // Commander setup
