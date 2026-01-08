@@ -4,6 +4,7 @@ import dotenv from "dotenv" ;
 import chalk from "chalk";
 import figlet from "figlet";
 import {Command} from "commander";
+import {login} from "./commands/auth/login.js"
 
 dotenv.config();
 
@@ -22,7 +23,8 @@ const main = async()=>{
     const program = new Command("orbital");
 
     program.version("0.0.1").
-    description("Orbital CLI - A CLI Based AI Tool");
+    description("Orbital CLI - A CLI Based AI Tool").
+    addCommand(login)
 
     program.action(()=>{
         program.help();
