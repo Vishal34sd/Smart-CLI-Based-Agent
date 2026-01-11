@@ -20,7 +20,7 @@ export const storeToken = async(token)=>{
         const tokenData = {
             access_token : token.access_token,
             refresh_token : token.refresh_token ,
-            token_type : token.token_type ;
+            token_type : token.token_type ,
             scope : token.scope ,
             expires_at : token.expires_in
             ? new Date(Date.now() + token.expires_in*1000).toISOString()
@@ -47,7 +47,7 @@ export const clearStoredToken = async ()=>{
     }
 }
 
-export const isTokenExpired = ()=>{
+export const isTokenExpired = async()=>{
     const token = await getStoredToken();
     if(!token || !token.expires_at){
         return true ;
@@ -75,4 +75,5 @@ export const requireAuth = async()=>{
         console.log(chalk.gray("Run: orbital login \n"));
         process.exit(1);
     }
+    return token ;
 }

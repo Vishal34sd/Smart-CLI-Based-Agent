@@ -11,6 +11,7 @@ import { createAuthClient } from "better-auth/client";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { logger } from "better-auth";
 import { fileURLToPath } from "url";
+import {getStoredToken , isTokenExpired} from "../../../lib/token.js"
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,21 +41,26 @@ export const loginAction = async (cmdOptions) => {
 
   intro(chalk.bold("Auth CLI Login"));
 
-  if (!clientId) {
-    console.error(
-      chalk.red(
-        "Error: Client ID is required. Set GITHUB_CLIENT_ID environment variable or use --client-id option.",
-      ),
-    );
-    process.exit(1);
+  // TODO
+  const existingToken = await getStoredToken();
+  const expired =  await isTokenExpired();
+
+  if(existingToken && !expired){
+    const shouldReAuth = await confirm({
+      message : "Your are already logged-In. Do You want to login Again",
+      initialValue : false ,
+    });
+
+    if(isCancel(shouldReAuth) || !showReAuth){
+      cancel("Login Cancelled");
+      process.exit(0);
+    }
   }
 
   const authClient = createAuthClient({
     baseURL: serverUrl,
     plugins: [
-      deviceAuthorizationClient({
-        provider: "github",
-      }),
+      deviceAuthorizationClient()
     ],
   });
 
@@ -124,8 +130,29 @@ export const loginAction = async (cmdOptions) => {
       interval,
     );
 
-    // You can use token here if needed
-    // console.log("Login successful");
+    if(token){
+      const saved = await storeToken();
+
+      if(!saved){
+        console.log(
+          chalk.yellow("\n Warming: Could not save authentication token.")
+        );
+        console.log(
+          chalk.yellow("You may need to login again on next use.")
+        );
+      }
+
+      // todo get the user data 
+
+      outro(chalk.green("Login successfull !"))
+
+      console.log(chalk.gray(`\n Token saved to: ${TOKEN_FILE}`))
+
+        console.log(
+          chalk.gray("You can now use AI commands without logging in again. \n ")
+        );
+    }
+
   } catch (err) {
     spinner.stop();
     console.error(chalk.red("Login failed:"), err);
