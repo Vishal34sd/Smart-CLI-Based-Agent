@@ -7,17 +7,17 @@ import { auth } from "./lib/auth.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:3000";
 
 app.use(express.json());
 
 app.use(
   cors({
-    origin: "http://localhost:3000", 
+    origin: CLIENT_ORIGIN,
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true, 
   })
 );
-
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
@@ -29,7 +29,7 @@ app.get("/api/me" , async (req, res)=>{
 });
 
 app.get("/device" , async(req , res)=>{
-  const {user_code} = req.query
+  const {user_code} = req.query;
   res.redirect(`http://localhost:3000/device?user_code=${user_code}`)
 });
 

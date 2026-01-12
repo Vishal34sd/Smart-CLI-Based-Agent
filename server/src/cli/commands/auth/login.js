@@ -1,4 +1,4 @@
-import { cancel, confirm, intro, isCancel } from "@clack/prompts";
+import { cancel, confirm, intro, outro, isCancel } from "@clack/prompts";
 import chalk from "chalk";
 import { Command } from "commander";
 import open from "open";
@@ -11,7 +11,7 @@ import { createAuthClient } from "better-auth/client";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { logger } from "better-auth";
 import { fileURLToPath } from "url";
-import {getStoredToken , isTokenExpired} from "../../../lib/token.js"
+import { getStoredToken, isTokenExpired, storeToken } from "../../../lib/token.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,8 +22,6 @@ const URL = "http://localhost:8080";
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 export const CONFIG_DIR = path.join(os.homedir(), ".better-auth");
 export const TOKEN_FILE = path.join(CONFIG_DIR, "token.json");
-
-
 
 export const loginAction = async (cmdOptions) => {
   const schema = z.object({
@@ -41,17 +39,16 @@ export const loginAction = async (cmdOptions) => {
 
   intro(chalk.bold("Auth CLI Login"));
 
-  // TODO
   const existingToken = await getStoredToken();
-  const expired =  await isTokenExpired();
+  const expired = await isTokenExpired();
 
-  if(existingToken && !expired){
+  if (existingToken && !expired) {
     const shouldReAuth = await confirm({
-      message : "Your are already logged-In. Do You want to login Again",
-      initialValue : false ,
+      message: "Your are already logged-In. Do You want to login Again",
+      initialValue: false,
     });
 
-    if(isCancel(shouldReAuth) || !showReAuth){
+    if (isCancel(shouldReAuth) || !shouldReAuth) {
       cancel("Login Cancelled");
       process.exit(0);
     }
@@ -59,9 +56,7 @@ export const loginAction = async (cmdOptions) => {
 
   const authClient = createAuthClient({
     baseURL: serverUrl,
-    plugins: [
-      deviceAuthorizationClient()
-    ],
+    plugins: [deviceAuthorizationClient()],
   });
 
   const spinner = yoctoSpinner({
@@ -130,29 +125,22 @@ export const loginAction = async (cmdOptions) => {
       interval,
     );
 
-    if(token){
-      const saved = await storeToken();
+    if (token) {
+      const saved = await storeToken(token);
 
-      if(!saved){
-        console.log(
-          chalk.yellow("\n Warming: Could not save authentication token.")
-        );
-        console.log(
-          chalk.yellow("You may need to login again on next use.")
-        );
+      if (!saved) {
+        console.log(chalk.yellow("\n Warming: Could not save authentication token."));
+        console.log(chalk.yellow("You may need to login again on next use."));
       }
 
-      // todo get the user data 
+      outro(chalk.green("Login successfull !"));
 
-      outro(chalk.green("Login successfull !"))
+      console.log(chalk.gray(`\n Token saved to: ${TOKEN_FILE}`));
 
-      console.log(chalk.gray(`\n Token saved to: ${TOKEN_FILE}`))
-
-        console.log(
-          chalk.gray("You can now use AI commands without logging in again. \n ")
-        );
+      console.log(
+        chalk.gray("You can now use AI commands without logging in again. \n "),
+      );
     }
-
   } catch (err) {
     spinner.stop();
     console.error(chalk.red("Login failed:"), err);
@@ -203,7 +191,6 @@ const pollForToken = async (
         } else if (error) {
           switch (error.error) {
             case "authorization_pending":
-              // Continue polling
               break;
             case "slow_down":
               pollingInterval += 5;
@@ -229,7 +216,7 @@ const pollForToken = async (
         }
       } catch (err) {
         spinner.stop();
-        logger.error(`Error: ${err.message || err}`);        
+        logger.error(`Error: ${err?.message || err}`);
         return;
       }
 
@@ -240,7 +227,6 @@ const pollForToken = async (
   });
 };
 
-// Commander setup
 export const login = new Command("login")
   .description("Login to Better Auth")
   .option("--server-url <url>", "The Better Auth server URL", URL)

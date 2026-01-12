@@ -1,5 +1,7 @@
 import {TOKEN_FILE} from "../cli/commands/auth/login.js";
 import {CONFIG_DIR} from "../cli/commands/auth/login.js";
+import chalk from "chalk"
+import fs from "fs/promises";
 
 export const getStoredToken = async ()=>{
     try{
@@ -32,7 +34,7 @@ export const storeToken = async(token)=>{
         return true ;
     }
     catch(err){
-        console.log(chalk.red("Failed to store token: " ) , error.message);
+        console.log(chalk.red("Failed to store token: " ) , err.message);
         return false ;
     }
 }
