@@ -5,7 +5,7 @@ import fs from "fs/promises";
 
 export const getStoredToken = async ()=>{
     try{
-        const data = await fs.readFile(TOKEN_FILE , "utf");
+        const data = await fs.readFile(TOKEN_FILE , "utf-8");
         const token = JSON.parse(data);
         return token ;
     }

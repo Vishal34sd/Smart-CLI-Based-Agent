@@ -3,6 +3,7 @@ import express from "express";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { auth } from "./lib/auth.js";
+import prisma from "./lib/db.js";
 
 
 const app = express();
@@ -22,10 +23,44 @@ app.use(
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.get("/api/me" , async (req, res)=>{
-    const session = await auth.api.getSession({
+  const session = await auth.api.getSession({
     headers : fromNodeHeaders (req.headers),
-    });
-  return res.json(session);
+  });
+
+  if (session) {
+    return res.json(session);
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json(null);
+  }
+
+  const [scheme, credentials] = authHeader.split(" ");
+  if (!scheme || !credentials || scheme.toLowerCase() !== "bearer") {
+    return res.status(400).json({ error: "Invalid Authorization header" });
+  }
+
+  const dbSession = await prisma.session.findUnique({
+    where: { token: credentials },
+    include: { user: true },
+  });
+
+  if (!dbSession) {
+    return res.status(401).json(null);
+  }
+
+  if (dbSession.expiresAt && dbSession.expiresAt.getTime() <= Date.now()) {
+    return res.status(401).json({ error: "Session expired" });
+  }
+
+  return res.json({
+    user: dbSession.user,
+    session: {
+      id: dbSession.id,
+      expiresAt: dbSession.expiresAt,
+    },
+  });
 });
 
 app.get("/device" , async(req , res)=>{
