@@ -1,7 +1,12 @@
-import {TOKEN_FILE} from "../cli/commands/auth/login.js";
-import {CONFIG_DIR} from "../cli/commands/auth/login.js";
+
 import chalk from "chalk"
 import fs from "fs/promises";
+import os from "os";
+import path from "path";
+
+
+export const CONFIG_DIR = path.join(os.homedir(), ".better-auth");
+export const TOKEN_FILE = path.join(CONFIG_DIR, "token.json");
 
 export const getStoredToken = async ()=>{
     try{

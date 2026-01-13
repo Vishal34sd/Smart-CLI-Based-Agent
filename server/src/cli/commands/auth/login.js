@@ -11,7 +11,9 @@ import { createAuthClient } from "better-auth/client";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { logger } from "better-auth";
 import { fileURLToPath } from "url";
-import { getStoredToken, isTokenExpired, storeToken } from "../../../lib/token.js";
+import { getStoredToken, isTokenExpired, storeToken ,TOKEN_FILE } from "../../../lib/token.js";
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,8 +22,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../../../.env") });
 
 const URL = "http://localhost:8080";
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-export const CONFIG_DIR = path.join(os.homedir(), ".better-auth");
-export const TOKEN_FILE = path.join(CONFIG_DIR, "token.json");
+
 
 export const loginAction = async (cmdOptions) => {
   const schema = z.object({
