@@ -52,6 +52,79 @@ const getUserFromToken = async()=>{
     return user;
 }
 
+const initConversation = async(userId , conversationId = null , mode = "chat")=>{
+    const spinner = yoctoSpinner({text : "Loading conservation ..."}).start();
+
+    const conversation = await chatService.getOrCreateConversation(
+        userId ,
+        conversationId ,
+        mode
+    )
+    spinner.success("Conversation Loaded");
+
+    const conversationInfo = boxen(
+        `${chalk.bold("Conversation")} : ${conversation.title}\n ${chalk.gray("ID: " + conversation.id)} \n ${chalk.gray("Mode: " + conversation.mode)}`,
+        {
+            padding : 1 ,
+            margin : {top: 1 , bottom : 1} ,
+            borderStyle : "round" ,
+            borderColor : "cyan" ,
+            title : "Chat Settion",
+            titleAlignment : "center"
+        }
+    );
+    console.log(conversationInfo);
+
+    if(conversation.mesaage?.length > 0){
+        console.log(chalk.yellow("Previous Messsages: \n"));
+        displayMessages(conversation.messages);
+    }
+
+    return conversation ;
+}
+
+const displayMessages = (messages) => {
+  messages.forEach((msg) => {
+    if (msg.role === "user") {
+      const userBox = boxen(chalk.white(msg.content), {
+        padding: 1,
+        margin: { left: 2, bottom: 1 },
+        borderStyle: "round",
+        borderColor: "blue",
+        title: "You",
+        titleAlignment: "left",
+      });
+      console.log(userBox);
+    } else {
+      const renderedContent = marked.parse(msg.content);
+      const assistantBox = boxen(renderedContent.trim(), {
+        padding: 1,
+        margin: { left: 2, bottom: 1 },
+        borderStyle: "round",
+        borderColor: "green",
+        title: "Assistant",
+        titleAlignment: "left",
+      });
+      console.log(assistantBox);
+    }
+  });
+};
+
+const saveMessage = async(conversationId , role , content) =>{
+    return await chatService.addMessage(conversation , role , content)
+}
+
+const updateConversationTitle = async(conversationId , userInput , messageCount)=>{
+    if(messageCount ===1){
+        const title = userInput.slice(0,50) + (userInput >50 ? "...":"");
+        await chatService.updateTitle(conversationId , title);
+    }
+}
+
+
+
+
+
 export const startChat = async(mode="chat" , conversationId = null)=>{
     try{
         intro(
