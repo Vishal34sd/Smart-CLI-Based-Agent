@@ -9,6 +9,10 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "postinstall": "npm run prisma:generate",
+    "predev": "npm run prisma:migrate && npm run prisma:generate",
     "dev": "nodemon src/index.js"
   },
   "keywords": [],

@@ -81,9 +81,9 @@ export class ChatService{
             orderBy : {createdAt : "asc"}
         });
 
-        return message.map((msg)=>({
-            ...msg ,
-            content : this.parseContent(msg.content)
+        return messages.map((msg) => ({
+            ...msg,
+            content: this.parseContent(msg.content),
         }));
     }
 
@@ -94,7 +94,7 @@ export class ChatService{
     async getUserConversation(userId){
         return await prisma.conversation.findMany({
             where : {userId} ,
-            orderBy :{updateAt : "des"},
+            orderBy :{updatedAt : "desc"},
             include :{
                 messages : {
                     take : 1,
@@ -150,7 +150,7 @@ export class ChatService{
     formatMessageForAI(messages){
         return messages.map((msg)=>({
             role : msg.role ,
-            content : typeof msg.content === "string" ? msg.content : JSON.stringfy(msg.content),
+            content : typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content),
         }));
     }
 }

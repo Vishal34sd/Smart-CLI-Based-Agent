@@ -105,10 +105,10 @@ model Message{
   conversationId String 
   role String 
   content String 
-  createdAt DateNow() @default(now())
+  createdAt DateTime() @default(now())
 
-  conversation Conversation @relation (fields : [conversation] ,
-  references : [id] , onDelete : Cascade )
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
 
   @@index([conversationId])
 }
