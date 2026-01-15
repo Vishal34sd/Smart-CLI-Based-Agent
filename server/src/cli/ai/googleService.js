@@ -33,6 +33,13 @@ export class AIService{
                 temperature : config.temperature
             }
 
+            if(tools && Object.keys(tool).length > 0){
+                streamConfig.tools = tools ;
+                streamConfig.maxStep = 5 ;
+
+                console.log(chalk.gray(`[DEBUG] Tools enabled : ${Obkect.keys(tools).join(',')}`));
+            }
+
             const result = streamText(streamConfig);
 
             let fullResponse = "" ;
@@ -43,13 +50,34 @@ export class AIService{
                     onChunk(chunk)
                 }
             }
+            const toolsCalls = [];
+            const toolResults = [];
 
+            if(fullResult.steps && Array.isArray(fullResult.steps)){
+                for(const step of fullResult.steps){
+                    if(step.toolCalls && step.toolCalls.length >0){
+                        for(const toolCall of step.toolCalls){
+                            toolCalls/push(toolCall);
+
+                            if(onToolCall){
+                                onToolCall(toolCall)
+                            }
+                        }
+                    }
+                    if(step.toolResults && step.toolResults.length > 0){
+                        toolResult.push(...step.toolResults)
+                    }
+                }
+            }
              
              return {
                 content : fullResponse ,
                 finishResponse: result.finishReason,
-                usage : result.usage
-             }
+                usage : result.usage,
+                toolCalls ,
+                toolResults,
+                steps: fullResult.steps
+             };
         }
         catch(error){
             console.error(chalk.red("AI Service Error:"), error.message);
@@ -66,10 +94,10 @@ export class AIService{
 
     async getMessage(messages , tools = undefined){
         let fullResponse = "";
-        await this.sendMessage(messages , (chunks)=>{
-            fullResponse += chunks
-        })
+       const result = await this.sendMessage(messages , (chunks)=>{
+            fullResponse += chunks;
+        } , tools)
 
-        return fullResponse ;
+        return result.content ;
     }
 }
