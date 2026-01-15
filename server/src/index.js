@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./config/env.js";
 import express from "express";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import cors from "cors";

@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../config/env.js";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { deviceAuthorization } from "better-auth/plugins"; 

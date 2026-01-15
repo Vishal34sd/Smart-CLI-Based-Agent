@@ -8,7 +8,7 @@ import chalk from "chalk"
 export class AIService{
     constructor(){
         if(!config.googleApiKey){
-            throw new Error("GOOGLE_API_KEY is not set in env")
+            throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set in env")
         }
 
         this.model = google(config.model , {
@@ -33,11 +33,11 @@ export class AIService{
                 temperature : config.temperature
             }
 
-            if(tools && Object.keys(tool).length > 0){
-                streamConfig.tools = tools ;
-                streamConfig.maxStep = 5 ;
+            if(tools && Object.keys(tools).length > 0){
+                streamConfig.tools = tools;
+                streamConfig.maxSteps = 5;
 
-                console.log(chalk.gray(`[DEBUG] Tools enabled : ${Obkect.keys(tools).join(',')}`));
+                console.log(chalk.gray(`[DEBUG] Tools enabled: ${Object.keys(tools).join(", ")}`));
             }
 
             const result = streamText(streamConfig);
@@ -50,33 +50,34 @@ export class AIService{
                     onChunk(chunk)
                 }
             }
-            const toolsCalls = [];
+
+            const toolCalls = [];
             const toolResults = [];
 
-            if(fullResult.steps && Array.isArray(fullResult.steps)){
-                for(const step of fullResult.steps){
-                    if(step.toolCalls && step.toolCalls.length >0){
-                        for(const toolCall of step.toolCalls){
-                            toolCalls/push(toolCall);
-
-                            if(onToolCall){
-                                onToolCall(toolCall)
+            const steps = await Promise.resolve(result.steps);
+            if (Array.isArray(steps)) {
+                for (const step of steps) {
+                    if (step?.toolCalls && Array.isArray(step.toolCalls) && step.toolCalls.length > 0) {
+                        for (const toolCall of step.toolCalls) {
+                            toolCalls.push(toolCall);
+                            if (onToolCall) {
+                                onToolCall(toolCall);
                             }
                         }
                     }
-                    if(step.toolResults && step.toolResults.length > 0){
-                        toolResult.push(...step.toolResults)
+                    if (step?.toolResults && Array.isArray(step.toolResults) && step.toolResults.length > 0) {
+                        toolResults.push(...step.toolResults);
                     }
                 }
             }
              
              return {
                 content : fullResponse ,
-                finishResponse: result.finishReason,
+                finishReason: result.finishReason,
                 usage : result.usage,
                 toolCalls ,
                 toolResults,
-                steps: fullResult.steps
+                steps
              };
         }
         catch(error){

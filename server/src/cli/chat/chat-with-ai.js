@@ -8,6 +8,7 @@ import {AIService} from "../ai/googleService.js";
 import {ChatService} from "../../service/chatService.js"
 import {getStoredToken} from "../../lib/token.js";
 import prisma from "../../lib/db.js"
+import { ensureDbConnection } from "../../lib/dbHealth.js";
 
 marked.use(
     markedTerminal({
@@ -35,6 +36,11 @@ const getUserFromToken = async()=>{
     const token = await getStoredToken()
     if(!token?.access_token){
         throw new Error("Not authenticated. Please run 'orbital login' first.");
+    }
+
+    const dbOk = await ensureDbConnection();
+    if(!dbOk){
+        throw new Error("Database unavailable. Fix DATABASE_URL/connectivity and try again.");
     }
 
     const spinner = yoctoSpinner({text: "Authenticating..."}).start();
@@ -137,6 +143,15 @@ const getAIResponse  = async(conversationId)=>{
             }
             fullResponse += chunk ;
         });
+
+        if(isFirstChunk){
+            spinner.stop();
+            console.log("\n");
+            const header = chalk.green.bold("Assistent: ");
+            console.log(header);
+            console.log(chalk.gray("-".repeat(60)));
+            isFirstChunk = false;
+        }
 
         console.log("\n");
         const renderMarkdown = marked.parse(fullResponse);

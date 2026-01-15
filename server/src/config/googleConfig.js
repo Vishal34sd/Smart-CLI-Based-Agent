@@ -1,5 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "./env.js";
 
 export const config = {
     googleApiKey : process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",

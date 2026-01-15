@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import dotenv from "dotenv" ;
+import "../config/env.js";
 import chalk from "chalk";
 import figlet from "figlet";
 import {Command} from "commander";
@@ -8,8 +8,6 @@ import {login} from "./commands/auth/login.js"
 import {logout} from "./commands/auth/logout.js"
 import {whoAmI} from "./commands/auth/aboutMe.js"
 import {wakeUp} from "./commands/ai/wakeUp.js"
-
-dotenv.config();
 
 const main = async()=>{
 
