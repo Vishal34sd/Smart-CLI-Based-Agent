@@ -58,6 +58,42 @@ export const toogleTool = (toolId)=>{
     const tool = availableTools.find(t=>t.id === toolId)
 
     if(tool){
-        tool.enabled = !tool.enabled
+        tool.enabled = !tool.enabled;
+            console.log(chalk.gray(`[DEBUG] Tool ${toolId} toogled to ${tool.enabled}`));
+
+            return tool.enabled ;
     }
+    console.log(chalk.red(`[DEBUG] Tool ${toolId} not found`));
+
+    return false ;
+}
+
+export const enableTools = (toolIds)=>{
+    console.log(chalk.gray(`[DEBUG] enabledTools called with: `), toolIds);
+
+    availableTools.forEach(tool =>{
+        const wasEnabled = tool.enabled ;
+        tool.enabled = toolIds.includes(tool.id);
+
+        if(tool.enabled !== wasEnabled){
+            console.log(chalk.gray(`[DEBUG] ${tool.id}: ${wasEnabled} -> ${tool.enabled}`));
+
+        }
+    });
+
+    const enabledCount = availableTools.filter(t => t.enabled).length ;
+    console.log(chalk.gray(`[DEBUG] Total tools enabled: ${enabledCount} /${available.length}` ))
+}
+
+export const getEnabledToolNames = ()=>{
+    const names = availableTools.filter(t => t.enabled).map(t => t.name);
+    console.log(chalk.gray(`[DEBUG] getEnabledTOoolNames returning: `), names);
+    return names;
+}
+
+export const resetTools = ()=>{
+    availableTools.forEach(tool =>{
+        tool.enabled = false ;
+    });
+    console.log(chak.gray(`[DEBUG] All tools have been reset (disabled)`);)
 }
