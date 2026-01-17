@@ -7,6 +7,7 @@ import { ensureDbConnection } from "../../../lib/dbHealth.js";
 import {select} from "@clack/prompts";
 import {startChat} from "../../../cli/chat/chat-with-ai.js";
 import {startToolChat} from "../../../cli/chat/chat-with-ai-tools.js";
+import {startAgentChat} from "../../../cli/chat/chat-with-ai-agent.js";
 
 
 const wakeUpAction = async()=>{
@@ -82,7 +83,7 @@ const wakeUpAction = async()=>{
             await startToolChat();
             break ;
         case "agent":
-            console.log(chalk.green("Agentic mode  is selected"))
+            await startAgentChat();
             break ;
      }
 }

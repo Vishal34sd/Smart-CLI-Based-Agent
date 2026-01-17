@@ -4,6 +4,7 @@ import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import cors from "cors";
 import { auth } from "./lib/auth.js";
 import prisma from "./lib/db.js";
+import { ensureDbConnectionOrExit } from "./lib/dbHealth.js";
 
 
 const app = express();
@@ -68,6 +69,31 @@ app.get("/device" , async(req , res)=>{
   res.redirect(`http://localhost:3000/device?user_code=${user_code}`)
 });
 
-app.listen(PORT , ()=>{
+const start = async () => {
+  await ensureDbConnectionOrExit({
+    retries: Number(process.env.DB_CONNECT_RETRIES || 10),
+    initialDelayMs: Number(process.env.DB_CONNECT_INITIAL_DELAY_MS || 500),
+    maxDelayMs: Number(process.env.DB_CONNECT_MAX_DELAY_MS || 5000),
+  });
+
+  const server = app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
-})
+  });
+
+  const shutdown = async (signal) => {
+    try {
+      console.log(`\nReceived ${signal}. Shutting down...`);
+      server.close(() => {
+        process.exitCode = 0;
+      });
+      await prisma.$disconnect();
+    } catch {
+      process.exit(1);
+    }
+  };
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+};
+
+start();

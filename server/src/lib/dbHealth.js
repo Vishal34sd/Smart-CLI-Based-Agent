@@ -43,16 +43,64 @@ export const formatDbConnectionTroubleshooting = () => {
 };
 
 export const ensureDbConnection = async () => {
-  try {
-    await prisma.$connect();
-    return true;
-  } catch (error) {
-    if (isPrismaDbConnectionError(error)) {
-      console.log(formatDbConnectionTroubleshooting());
+  return ensureDbConnectionWithRetry();
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export const ensureDbConnectionWithRetry = async (options = {}) => {
+  const {
+    retries = Number(process.env.DB_CONNECT_RETRIES || 6),
+    initialDelayMs = 500,
+    maxDelayMs = 5000,
+    logAttempts = true,
+  } = options;
+
+  const attempts = Math.max(1, Number(retries) + 1);
+  let delayMs = initialDelayMs;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await prisma.$connect();
+      await prisma.$queryRaw`SELECT 1`;
+      return true;
+    } catch (error) {
+      const isConnectionError = isPrismaDbConnectionError(error);
+      const isLastAttempt = attempt === attempts;
+
+      if (!isLastAttempt && isConnectionError) {
+        if (logAttempts) {
+          const hostHint = getDatabaseHostHint();
+          const hostLine = hostHint ? ` (${hostHint})` : "";
+          console.log(
+            chalk.yellow(
+              `Database not reachable${hostLine}. Retry ${attempt}/${attempts - 1} in ${delayMs}ms...`
+            )
+          );
+        }
+        await sleep(delayMs);
+        delayMs = Math.min(maxDelayMs, Math.floor(delayMs * 1.8));
+        continue;
+      }
+
+      if (isConnectionError) {
+        console.log(formatDbConnectionTroubleshooting());
+        return false;
+      }
+
+      console.log(chalk.red(`Database error: ${error?.message || error}`));
       return false;
     }
-
-    console.log(chalk.red(`Database error: ${error?.message || error}`));
-    return false;
   }
+
+  return false;
+};
+
+export const ensureDbConnectionOrExit = async (options = {}) => {
+  const ok = await ensureDbConnectionWithRetry(options);
+  if (ok) return true;
+
+  // eslint-disable-next-line no-console
+  console.error(chalk.red("\nServer cannot start without database connectivity. Exiting."));
+  process.exit(1);
 };

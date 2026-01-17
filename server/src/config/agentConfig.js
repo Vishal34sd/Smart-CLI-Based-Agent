@@ -4,6 +4,9 @@ import chalk from "chalk";
 import { generateObject } from "ai";
 import { z } from "zod";
 
+// Backwards-compat alias (typo) to avoid runtime crashes if referenced.
+const genenateObject = generateObject;
+
 
 const applicationSchema = z.object({
   folderName: z.string().describe("Kebab-Case folder name for the application"),
@@ -17,7 +20,15 @@ const applicationSchema = z.object({
   setupCommands: z.array(
     z.string().describe("Bash commands to setup and run (e.g: npm install , npm run dev")
   ),
-  dependencies: z.record(z.string()).optional().describe("NPM dependecies with versions")
+  dependencies: z
+    .array(
+      z.object({
+        name: z.string().describe("NPM package name"),
+        version: z.string().describe("Semver range/version")
+      })
+    )
+    .optional()
+    .describe("NPM dependencies with versions")
 });
 
 const printSystem = (message) => {
@@ -66,18 +77,38 @@ const displayFileTree = (files, folderName) => {
   printTree(tree, "  ");
 }
 
+const createApplicationFiles = async(baseDir , folderName , files)=>{
+  const appDir = path.join(baseDir , folderName)
+
+  await fs.mkdir(appDir , {recursive : true});
+
+  printSystem(chalk.cyan(`\n Created directory: ${folderName}/`));
+
+  for(const file of files){
+    const filePath = path.join(appDir , file.path);
+    const fileDir = path.dirname(filePath);
+
+    await fs.mkdir(fileDir , {recursive : true });
+    await fs.writeFile(filePath , file.content , "utf8");
+    printSystem(chalk.green(` ${file.path}`));
+  }
+
+  return appDir ;
+
+}
+
 
 export const generateApplication = async (description, aiService, cwd = process.cwd()) => {
   try {
-    printSystem(chalk.cyan(`\n Agent Mode: Genrating your application...\n`));
+    printSystem(chalk.cyan(`\n Agent Mode: Generating your application...\n`));
     printSystem(chalk.gray(`Request: ${description}\n`));
 
     printSystem(chalk.magenta("Agent Response: \n"));
 
-    const { object: application } = await genenateObject({
+    const { object: application } = await generateObject({
       model: aiService.model,
       schema: applicationSchema,
-      prompt: `Create a complete, production-ready application for: {description}
+      prompt: `Create a complete, production-ready application for: ${description}
 
 CRITICAL REQUIREMENTS:
 1. Generate ALL files needed for the application to run
@@ -126,8 +157,20 @@ Provide:
 
       printSystem(chalk.white("```\n"));
     }
+
+    return {
+      folderName: application.folderName ,
+      appDir ,
+      files: application.files.map(f=> f.path),
+      commands : application.setupCommands,
+      success: true 
+    }
   }
   catch (error) {
-
+    printSystem(chalk.red(`\n Error generating application: ${error.message}\n`));
+    if(error.stack){
+      printSystem(chalk.dim(error.stack + "\n"));
+    }
+    throw error ;
   }
 }
