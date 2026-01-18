@@ -12,10 +12,10 @@ const LoginForm = ()=>{
     const [isLoading , setLoading] = useState(false);
 
     return(
-        <div className ="flex flex-col gap-6 justify-center items-center">
+        <div className ="flex flex-col gap-6 justify-center items-center bg-gradient-to-b from-black via-indigo-950 to-black h-screen w-screen">
             <div className = "flex flex-col items-center justify-center space-y-4">
-                <Image src ={"/login1.png"} alt = "Login" height ={500} width ={500}/>
-                <h1 className ="text-6xl font-extrabold text-indigo-400">
+                <Image src ={"/space.png"} alt = "Login" height ={600} width ={600}/>
+                <h1 className ="text-6xl font-extrabold text-white">
                     Welcome Back! to Orbital CLI
                 </h1>
                 <p className = "text-base font-medium text-zinc-400">
