@@ -75,8 +75,7 @@ orbital login
 
 Chat with AI
 orbital wakeup
-
-Example Output
+Output
 When agent generation succeeds, Orbital shows:
 
 App folder name
