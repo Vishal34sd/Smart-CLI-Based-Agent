@@ -4,13 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { CheckCircle, XCircle, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
-import React from "react";
-
-const DeviceApprovalPage = () => {
+const DeviceApprovalPageInner = () => {
   const { data, isPending } = authClient.useSession();
 
   const router = useRouter();
@@ -30,8 +28,18 @@ const DeviceApprovalPage = () => {
     );
   }
 
+  useEffect(() => {
+    if (!data?.session && !data?.user) {
+      router.replace("/sign-in");
+    }
+  }, [data?.session, data?.user, router]);
+
   if (!data?.session && !data?.user) {
-    router.push("/sign-in");
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black">
+        <Spinner />
+      </div>
+    );
   }
 
   const handleApprove = async () => {
@@ -197,6 +205,20 @@ const DeviceApprovalPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const DeviceApprovalPage = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center h-screen bg-black">
+          <Spinner />
+        </div>
+      }
+    >
+      <DeviceApprovalPageInner />
+    </Suspense>
   );
 };
 
