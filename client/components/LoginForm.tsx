@@ -11,6 +11,9 @@ const LoginForm = ()=>{
     const router = useRouter();
     const [isLoading , setLoading] = useState(false);
 
+    const callbackURL =
+        typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+
     return(
         <div className ="flex flex-col gap-6 justify-center items-center bg-gradient-to-b from-black via-indigo-950 to-black h-screen w-screen">
             <div className = "flex flex-col items-center justify-center space-y-4">
@@ -33,7 +36,7 @@ const LoginForm = ()=>{
                                 type= "button" 
                                 onClick ={()=> authClient.signIn.social({
                                     provider : "github" ,
-                                    callbackURL:"http://localhost:3000"
+                                    callbackURL
                                 })} >
                                 <Image src ={"/github.png"} alt ="github" height ={18 } width ={18}
                                 className = "size-4 dark:invert hover:cursor-pointer" />
