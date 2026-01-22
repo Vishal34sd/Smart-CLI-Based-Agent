@@ -2,7 +2,9 @@ import chalk from "chalk";
 import { Command } from "commander";
 import { requireAuth } from "../../../lib/token.js";
 
-export const whoAmIAction = async()=>{
+const DEFAULT_SERVER_URL = "https://smart-cli-based-agent.onrender.com";
+
+export const whoAmIAction = async (cmdOptions = {})=>{
     const token = await requireAuth();
     if(!token?.access_token){
         console.log("No access token found . Please login.");
@@ -10,17 +12,32 @@ export const whoAmIAction = async()=>{
     }
 
     const baseUrl =
-        process.env.BETTER_AUTH_BASE_URL || "https://smart-cli-based-agent.onrender.com";
+        cmdOptions.serverUrl ||
+        process.env.ORBITAL_SERVER_URL ||
+        process.env.BACKEND_URL ||
+        process.env.SERVER_URL ||
+        DEFAULT_SERVER_URL;
     const authHeaderValue = token.token_type
         ? `${token.token_type} ${token.access_token}`
         : `Bearer ${token.access_token}`;
 
-    const res = await fetch(`${baseUrl}/api/me`, {
-        method: "GET",
-        headers: {
-            Authorization: authHeaderValue,
-        },
-    });
+    let res;
+    try {
+        res = await fetch(`${baseUrl}/api/me`, {
+            method: "GET",
+            headers: {
+                Authorization: authHeaderValue,
+            },
+        });
+    } catch (err) {
+        console.error(chalk.red(`Failed to reach server: ${baseUrl}`));
+        console.error(
+            chalk.gray(
+                "Set `ORBITAL_SERVER_URL` (or pass `--server-url`) to your deployed backend, or start your local server.",
+            ),
+        );
+        process.exit(1);
+    }
 
     if (!res.ok) {
         const bodyText = await res.text().catch(() => "");
@@ -48,4 +65,12 @@ export const whoAmIAction = async()=>{
 
 export const whoAmI = new Command("whoami")
   .description("Show the currently logged-in user")
-  .action(whoAmIAction);
+    .option(
+        "--server-url <url>",
+        "Orbital server base URL (e.g. https://smart-cli-based-agent.onrender.com)",
+        process.env.ORBITAL_SERVER_URL ||
+            process.env.BACKEND_URL ||
+            process.env.SERVER_URL ||
+            DEFAULT_SERVER_URL,
+    )
+    .action(whoAmIAction);
