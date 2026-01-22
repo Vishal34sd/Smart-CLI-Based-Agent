@@ -20,6 +20,19 @@ const DeviceApprovalPageInner = () => {
     deny: false,
   });
 
+  useEffect(() => {
+    if (isPending) return;
+
+    if (!data?.session && !data?.user) {
+      router.replace("/sign-in");
+      return;
+    }
+
+    if (!userCode) {
+      router.replace("/device");
+    }
+  }, [data?.session, data?.user, isPending, router, userCode]);
+
   if (isPending) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-black">
@@ -28,13 +41,15 @@ const DeviceApprovalPageInner = () => {
     );
   }
 
-  useEffect(() => {
-    if (!data?.session && !data?.user) {
-      router.replace("/sign-in");
-    }
-  }, [data?.session, data?.user, router]);
-
   if (!data?.session && !data?.user) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-black">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!userCode) {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-black">
         <Spinner />
