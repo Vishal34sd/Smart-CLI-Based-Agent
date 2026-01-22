@@ -9,7 +9,10 @@ import { ensureDbConnectionOrExit } from "./lib/dbHealth.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:3000";
+const CLIENT_ORIGIN =
+  process.env.CLIENT_ORIGIN ||
+  process.env.FRONTEND_URL ||
+  "https://smart-cli-based-agent-t7x4.vercel.app";
 
 app.use(express.json());
 
@@ -66,7 +69,7 @@ app.get("/api/me" , async (req, res)=>{
 
 app.get("/device" , async(req , res)=>{
   const {user_code} = req.query;
-  res.redirect(`http://localhost:3000/device?user_code=${user_code}`)
+  res.redirect(`${CLIENT_ORIGIN}/device?user_code=${user_code}`)
 });
 
 const start = async () => {

@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.resolve(__dirname, "../../../../.env") });
 
-const URL = "http://localhost:8080";
+const URL = "https://smart-cli-based-agent.onrender.com";
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 
 

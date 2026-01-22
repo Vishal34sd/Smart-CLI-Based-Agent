@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const API_PROXY_TARGET = process.env.API_PROXY_TARGET || "http://localhost:8080";
+const API_PROXY_TARGET =
+  process.env.API_PROXY_TARGET || "https://smart-cli-based-agent.onrender.com";
 
 const nextConfig: NextConfig = {
   images: {

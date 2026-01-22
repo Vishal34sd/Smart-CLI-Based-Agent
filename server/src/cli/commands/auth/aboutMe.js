@@ -9,7 +9,8 @@ export const whoAmIAction = async()=>{
         process.exit(1);
     }
 
-    const baseUrl = process.env.BETTER_AUTH_BASE_URL || "http://localhost:8080";
+    const baseUrl =
+        process.env.BETTER_AUTH_BASE_URL || "https://smart-cli-based-agent.onrender.com";
     const authHeaderValue = token.token_type
         ? `${token.token_type} ${token.access_token}`
         : `Bearer ${token.access_token}`;

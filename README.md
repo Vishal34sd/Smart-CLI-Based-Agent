@@ -49,17 +49,28 @@ The most powerful mode:
 
 ## 📦 Installation
 
+## Deployed URLs
+
+- Frontend (Vercel): https://smart-cli-based-agent-t7x4.vercel.app/sign-in
+- Backend (Render): https://smart-cli-based-agent.onrender.com
+
 Clone the repo:
 
 ```bash
 git clone https://github.com/<your-username>/orbital-cli.git
 cd orbital-cli
 
-Environment Setup--
+```
+
+Environment Setup
 
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
-GOOGLE_GENERATIVE_AI_API_KEY="your_api_key"
-MODEL="gemini-1.5-flash"
+GOOGLE_GEMINI_API_KEY="your_api_key"
+ORBITAL_MODEL="gemini-2.5-flash"
+
+# Deployed URLs
+BETTER_AUTH_BASE_URL="https://smart-cli-based-agent.onrender.com"
+FRONTEND_URL="https://smart-cli-based-agent-t7x4.vercel.app"
 
 Then generate Prisma client + sync schema:
 

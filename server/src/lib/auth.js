@@ -10,10 +10,14 @@ export const auth = betterAuth({
     }),
     baseURL:
       process.env.BETTER_AUTH_BASE_URL ||
-      process.env.CLIENT_ORIGIN ||
-      "http://localhost:3000",
+      "https://smart-cli-based-agent.onrender.com",
     basePath:"/api/auth" ,
-    trustedOrigins : ["http://localhost:3000"],
+    trustedOrigins: [
+      process.env.CLIENT_ORIGIN ||
+        process.env.FRONTEND_URL ||
+        "https://smart-cli-based-agent-t7x4.vercel.app",
+      "http://localhost:3000",
+    ],
     plugins: [
     deviceAuthorization({ 
       verificationUri: "/device", 

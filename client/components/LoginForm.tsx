@@ -12,7 +12,9 @@ const LoginForm = ()=>{
     const [isLoading , setLoading] = useState(false);
 
     const callbackURL =
-        typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+        typeof window !== "undefined"
+            ? window.location.origin
+            : "https://smart-cli-based-agent-t7x4.vercel.app";
 
     return(
         <div className ="flex flex-col gap-6 justify-center items-center bg-gradient-to-b from-black via-indigo-950 to-black h-screen w-screen">
