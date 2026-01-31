@@ -13,7 +13,7 @@ import { generateApplication } from "../../config/agentConfig.js";
 
 marked.use(markedTerminal());
 
-const aiService = new AIService();
+let aiService;
 const chatService = new ChatService();
 
 const getEnabledToolNames = () => {
@@ -211,6 +211,14 @@ const agentLoop = async (conversation) => {
 
 export const startAgentChat = async (conversationId = null) => {
   try {
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error(
+        "Gemini API key is not set. Run: orbital setkey <your-gemini-api-key>"
+      );
+    }
+
+    aiService = new AIService();
+
     intro(
       boxen(
         chalk.bold.magenta("Orbital AI - Agent Mode\n\n") +

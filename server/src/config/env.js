@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
+import os from "os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +11,21 @@ const __dirname = path.dirname(__filename);
 const serverEnvPath = path.resolve(__dirname, "../../.env");
 
 dotenv.config({ path: serverEnvPath });
+
+// Load Orbital user config (stored in the user's home directory) and
+// hydrate env vars if they are not already set.
+try {
+	const orbitalConfigPath = path.join(os.homedir(), ".orbital", "config.json");
+	if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && fs.existsSync(orbitalConfigPath)) {
+		const raw = fs.readFileSync(orbitalConfigPath, "utf-8");
+		const parsed = JSON.parse(raw);
+		if (parsed?.geminiApiKey && typeof parsed.geminiApiKey === "string") {
+			process.env.GOOGLE_GENERATIVE_AI_API_KEY = parsed.geminiApiKey.trim();
+		}
+	}
+} catch {
+	// ignore
+}
 
 const stripWrappingQuotes = (value) => {
 	if (typeof value !== "string") return value;

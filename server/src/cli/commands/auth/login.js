@@ -6,7 +6,6 @@ import os from "os";
 import path from "path";
 import yoctoSpinner from "yocto-spinner";
 import * as z from "zod";
-import dotenv from "dotenv";
 import { createAuthClient } from "better-auth/client";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { logger } from "better-auth";
@@ -18,13 +17,21 @@ import { getStoredToken, isTokenExpired, storeToken ,TOKEN_FILE } from "../../..
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({ path: path.resolve(__dirname, "../../../../.env") });
-
 const URL = "https://smart-cli-based-agent.onrender.com";
 const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 
 
 export const loginAction = async (cmdOptions) => {
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    console.log(chalk.red("Gemini API key is not set."));
+    console.log(
+      chalk.gray(
+        "Run: orbital setkey <your-gemini-api-key>\nThen run: orbital login",
+      ),
+    );
+    process.exit(1);
+  }
+
   const schema = z.object({
     serverUrl: z.string().optional(),
     clientId: z.string().optional(),

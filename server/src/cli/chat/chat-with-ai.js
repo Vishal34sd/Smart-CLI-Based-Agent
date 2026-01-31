@@ -29,7 +29,7 @@ marked.use(
     })
 )
 
-const aiService = new AIService();
+let aiService;
 const chatService = new ChatService();
 
 const getUserFromToken = async()=>{
@@ -233,6 +233,14 @@ const chatLoop = async(conversation)=>{
 
 export const startChat = async(mode="chat" , conversationId = null)=>{
     try{
+        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            throw new Error(
+                "Gemini API key is not set. Run: orbital setkey <your-gemini-api-key>"
+            );
+        }
+
+        aiService = new AIService();
+
         intro(
             boxen(chalk.bold.cyan("Orbital AI Chat") , {
                 padding: 1 ,

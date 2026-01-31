@@ -8,6 +8,7 @@ import {login} from "./commands/auth/login.js"
 import {logout} from "./commands/auth/logout.js"
 import {whoAmI} from "./commands/auth/aboutMe.js"
 import {wakeUp} from "./commands/ai/wakeUp.js"
+import {setkey} from "./commands/config/setkey.js"
 
 const main = async()=>{
 
@@ -28,7 +29,8 @@ const main = async()=>{
     addCommand(login).
     addCommand(logout).
     addCommand(whoAmI).
-    addCommand(wakeUp)
+    addCommand(wakeUp).
+    addCommand(setkey)
 
     program.action(()=>{
         program.help();
