@@ -20,7 +20,7 @@ const main = async()=>{
         )
     )
 
-    console.log(chalk.red(" A CLI Based AI Tool \n"));
+    console.log(chalk.yellow(" A CLI Based AI Tool \n"));
 
     const program = new Command("orbital");
 

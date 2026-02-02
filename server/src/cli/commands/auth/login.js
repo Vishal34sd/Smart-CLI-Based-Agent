@@ -143,7 +143,7 @@ export const loginAction = async (cmdOptions) => {
 
       outro(chalk.green("Login successfull !"));
 
-      console.log(chalk.gray(`\n Token saved to: ${TOKEN_FILE}`));
+      //console.log(chalk.gray(`\n Token saved to: ${TOKEN_FILE}`));
 
       console.log(
         chalk.gray("You can now use AI commands without logging in again. \n "),
