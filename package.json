@@ -1,0 +1,65 @@
+{
+  "name": "@dubeyvishal/orbital-cli",
+  "version": "1.0.1",
+  "description": "A fullstack CLI-based AI platform with chat mode, multi-tool agents, and agentic AI workflows. Includes GitHub login with device authorization, secure authentication, and modular client–server architecture for building intelligent automation tools.",
+  "author": "Vishal Dubey",
+  "license": "MIT",
+
+  "private": false,
+
+  "type": "module",
+  "bin": {
+    "orbital": "server/src/cli/main.js"
+  },
+  "files": [
+    "server/src/cli/",
+    "server/src/config/",
+    "server/src/lib/",
+    "server/src/service/",
+    "server/prisma/schema.prisma",
+    "README.md"
+  ],
+
+  "publishConfig": {
+    "access": "public"
+  },
+
+  "engines": {
+    "node": ">=18"
+  },
+
+  "dependencies": {
+    "@ai-sdk/google": "^3.0.6",
+    "@clack/prompts": "^0.11.0",
+    "@prisma/client": "^5.22.0",
+    "ai": "^6.0.29",
+    "better-auth": "^1.4.10",
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "dotenv": "^17.2.3",
+    "figlet": "^1.9.4",
+    "marked": "^15.0.12",
+    "marked-terminal": "^7.3.0",
+    "open": "^11.0.0",
+    "prisma": "^5.22.0",
+    "yocto-spinner": "^1.0.0",
+    "zod": "^4.3.5"
+  },
+
+  "scripts": {
+    "install-all": "npm install --prefix client && npm install --prefix server",
+    "start-client": "npm start --prefix client",
+    "start-server": "npm start --prefix server",
+    "dev": "npm run start-server && npm run start-client"
+  },
+
+  "keywords": [
+    "orbital",
+    "cli",
+    "nodejs",
+    "fullstack",
+    "client-server",
+    "javascript"
+  ]
+}

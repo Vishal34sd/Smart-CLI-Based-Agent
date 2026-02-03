@@ -1,0 +1,25 @@
+# Never publish secrets / env files
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Common secret key formats
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.crt
+**/*id_rsa*
+
+# Tooling / repo metadata
+.git
+.github
+node_modules
+npm-debug.log
+.DS_Store
+
+# Do not publish the Next.js client or backend-only artifacts
+client/
+server/prisma/migrations/
+server/.env.example
