@@ -12,21 +12,20 @@
     "orbital": "server/src/cli/main.js"
   },
   "files": [
-    "server/src/cli/",
-    "server/src/config/",
-    "server/src/lib/",
-    "server/src/service/",
-    "server/prisma/schema.prisma",
-    "README.md"
-  ],
+  "server/src",
+  "server/prisma",
+  "README.md"
+]
+,
 
   "publishConfig": {
     "access": "public"
   },
 
   "engines": {
-    "node": ">=18"
-  },
+  "node": ">=18 <=22"
+}
+,
 
   "dependencies": {
     "@ai-sdk/google": "^3.0.6",
@@ -48,11 +47,13 @@
   },
 
   "scripts": {
-    "install-all": "npm install --prefix client && npm install --prefix server",
-    "start-client": "npm start --prefix client",
-    "start-server": "npm start --prefix server",
-    "dev": "npm run start-server && npm run start-client"
-  },
+  "postinstall": "cd server && npx prisma generate",
+  "install-all": "npm install --prefix client && npm install --prefix server",
+  "start-client": "npm start --prefix client",
+  "start-server": "npm start --prefix server",
+  "dev": "npm run start-server && npm run start-client"
+}
+,
 
   "keywords": [
     "orbital",
