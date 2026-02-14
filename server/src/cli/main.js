@@ -9,6 +9,7 @@ import {logout} from "./commands/auth/logout.js"
 import {whoAmI} from "./commands/auth/aboutMe.js"
 import {wakeUp} from "./commands/ai/wakeUp.js"
 import {setkey} from "./commands/config/setkey.js"
+import {launch} from "./commands/General/openApp.js"
 
 const main = async()=>{
 
@@ -23,6 +24,8 @@ const main = async()=>{
     console.log(chalk.yellow(" A CLI Based AI Tool \n"));
 
     const program = new Command("orbital");
+    
+
 
     program.version("0.0.1").
     description("Orbital CLI - A CLI Based AI Tool").
@@ -30,7 +33,8 @@ const main = async()=>{
     addCommand(logout).
     addCommand(whoAmI).
     addCommand(wakeUp).
-    addCommand(setkey)
+    addCommand(setkey).
+    addCommand(launch)
 
     program.action(()=>{
         program.help();
