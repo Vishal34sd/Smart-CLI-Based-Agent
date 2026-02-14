@@ -1,19 +1,12 @@
-const openGithub = async () => {
-  await open("https://github.com");
-  console.log(chalk.green("Opening GitHub..."));
+import { exec } from "child_process";
+import chalk from "chalk";
+
+const openApp = (url, name) => {
+  console.log(chalk.green(`Opening ${name}...`));
+  exec(`start "" "${url}"`);
 };
 
-const openYoutube = async () => {
-  await open("https://youtube.com");
-  console.log(chalk.green("Opening YouTube..."));
-};
-
-const openLeetcode = async () => {
-  await open("https://leetcode.com");
-  console.log(chalk.green("Opening LeetCode..."));
-};
-
-const openLinkedin = async () => {
-  await open("https://linkedin.com");
-  console.log(chalk.green("Opening LinkedIn..."));
-};
+export const openGithub = () => openApp("https://github.com", "GitHub");
+export const openGmail = () => openApp("https://gmail.com", "Gmail");
+export const openLeetcode = () => openApp("https://leetcode.com", "LeetCode");
+export const openLinkedin = () => openApp("https://linkedin.com", "LinkedIn");

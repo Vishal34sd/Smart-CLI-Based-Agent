@@ -10,6 +10,7 @@ import {whoAmI} from "./commands/auth/aboutMe.js"
 import {wakeUp} from "./commands/ai/wakeUp.js"
 import {setkey} from "./commands/config/setkey.js"
 import {launch} from "./commands/General/openApp.js"
+import {search} from "./commands/General/searchYoutube.js"
 
 const main = async()=>{
 
@@ -34,7 +35,8 @@ const main = async()=>{
     addCommand(whoAmI).
     addCommand(wakeUp).
     addCommand(setkey).
-    addCommand(launch)
+    addCommand(launch).
+    addCommand(search)
 
     program.action(()=>{
         program.help();

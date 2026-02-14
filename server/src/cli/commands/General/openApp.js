@@ -5,6 +5,7 @@ import { getStoredToken } from "../../../lib/token.js";
 import prisma from "../../../lib/db.js";
 import { ensureDbConnection } from "../../../lib/dbHealth.js";
 import { select } from "@clack/prompts";
+import {openGithub , openLinkedin ,  openLeetcode , openGmail} from "../../../cli/generalApp/Apps.js"
 
 const openAppAction = async () => {
   const token = await getStoredToken();
@@ -57,9 +58,9 @@ const openAppAction = async () => {
         hint: "View repositories, profile & open projects",
       },
       {
-        value: "youtube",
-        label: "YouTube",
-        hint: "Browse trending or searched videos",
+        value: "gmail",
+        label: "Gmail",
+        hint: "Check emails and manage inbox quickly",
       },
       {
         value: "leetcode",
@@ -75,26 +76,26 @@ const openAppAction = async () => {
   });
 
   switch (choice) {
-    case "github":
-    //   await openGithub();
-      break;
+  case "github":
+    await openGithub();
+    break;
 
-    case "youtube":
-    //   await openYoutube();
-      break;
+  case "gmail":
+    await openGmail();
+    break;
 
-    case "leetcode":
-    //   await openLeetcode();
-      break;
+  case "leetcode":
+    await openLeetcode();
+    break;
 
-    case "linkedin":
-    //   await openLinkedin();
-      break;
+  case "linkedin":
+    await openLinkedin();
+    break;
 
-    default:
-      console.log(chalk.red("Invalid choice."));
-  }
-};
+  default:
+    console.log(chalk.red("Invalid choice."));
+}
+}
 
 export const launch = new Command("launch")
   .description("Open external apps like GitHub, YouTube, etc.")
