@@ -1,6 +1,6 @@
 {
   "name": "@dubeyvishal/orbital-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A fullstack CLI-based AI platform with chat mode, multi-tool agents, and agentic AI workflows. Includes GitHub login with device authorization, secure authentication, and modular client–server architecture for building intelligent automation tools.",
   "author": "Vishal Dubey",
   "license": "MIT",

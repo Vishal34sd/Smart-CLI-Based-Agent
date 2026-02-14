@@ -6,7 +6,7 @@ const playAction = (songParts) => {
   const song = songParts.join(" ");
   const encoded = encodeURIComponent(song);
 
-  console.log(chalk.green(`🎵 Searching "${song}" on Spotify ...`));
+  console.log(chalk.green(`Searching "${song}" on Spotify ...`));
 
   exec(`start /min "" spotify:search:${encoded}`);
 };
