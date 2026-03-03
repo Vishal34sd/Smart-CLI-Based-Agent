@@ -6,6 +6,19 @@ Built with **Next.js**, **Node.js**, **Express**, and **Commander.js**, with sec
 
 ---
 
+## 📸 Project Screenshots
+
+### 🔐 Orbital Login Screen
+![Orbital Login Screen](./images/pic1.png)
+
+### 🛠️ Orbital Wakeup – Tools Loaded
+![Orbital Wakeup](./images/pic2.png)
+
+### 🤖 Agentic Mode
+![Agentic Mode](./images/pic3.png)
+
+---
+
 ## ✨ Features
 
 ###  AI Chat Mode
