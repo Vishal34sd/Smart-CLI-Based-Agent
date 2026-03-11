@@ -6,7 +6,7 @@ const API_PROXY_TARGET =
 const nextConfig: NextConfig = {
   images: {
     domains: [
-      "avatars.githubusercontent.com", // GitHub profile images
+      "avatars.githubusercontent.com", 
     ],
   },
   async rewrites() {

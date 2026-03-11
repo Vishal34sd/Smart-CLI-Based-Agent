@@ -88,7 +88,7 @@ const selectTools = async () => {
   const toolOptions = availableTools.map((tool) => ({
     value: tool.id,
     label: tool.name,
-    // Long hints wrap in the terminal and look like duplicated options.
+    
     hint: truncateHint(tool.description),
   }));
 
