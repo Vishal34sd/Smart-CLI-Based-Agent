@@ -10,7 +10,6 @@ import cliRoutes from "./routes/cliRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
-
 const app = express();
 const PORT = process.env.PORT || 8080;
 const CLIENT_ORIGIN = FRONTEND_URL;
@@ -21,7 +20,7 @@ app.use(
   cors({
     origin: CLIENT_ORIGIN,
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true, 
+    credentials: true,
   })
 );
 

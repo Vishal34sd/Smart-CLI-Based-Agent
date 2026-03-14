@@ -1,5 +1,5 @@
 "use client"
-import {authClient} from "@/lib/auth-client";
+import { API_BASE } from "@/config/api";
 import type React from "react"
 
 import {useRouter} from "next/navigation"
@@ -19,14 +19,22 @@ const DeviceAuthorizationPage  = ()=>{
         setIsLoading(true)
 
         try{
-            const formattedCode = userCode.trim().replace(/-/g, "").toUpperCase()
+            const formattedCode = userCode.trim().replace(/-/g, "").toUpperCase();
+            const response = await fetch(
+              `${API_BASE}/api/auth/device?user_code=${encodeURIComponent(formattedCode)}`,
+              {
+                method: "GET",
+                credentials: "include",
+              }
+            );
 
-            const response = await authClient.device({
-                query : {user_code: formattedCode}
-            })
-            if(response.data){
-                router.push(`/approve?user_code=${formattedCode}`)
+            if (!response.ok) {
+              const bodyText = await response.text().catch(() => "");
+              setError(bodyText || "Invalid or expired code");
+              return;
             }
+
+            router.push(`/approve?user_code=${formattedCode}`);
         }
         catch(err){
             setError("Invalid or expired code")
