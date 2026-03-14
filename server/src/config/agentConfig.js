@@ -8,7 +8,7 @@ import { z } from "zod";
 const genenateObject = generateObject;
 
 
-const applicationSchema = z.object({
+export const applicationSchema = z.object({
   folderName: z.string().describe("Kebab-Case folder name for the application"),
   description: z.string().describe("Brief description of what was created"),
   files: z.array(
@@ -35,7 +35,7 @@ const printSystem = (message) => {
   console.log(message);
 }
 
-const displayFileTree = (files, folderName) => {
+export const displayFileTree = (files, folderName) => {
   printSystem(chalk.cyan("📂 Project Structure:"));
   printSystem(chalk.white(`${folderName}/`));
 
@@ -77,7 +77,7 @@ const displayFileTree = (files, folderName) => {
   printTree(tree, "  ");
 }
 
-const createApplicationFiles = async(baseDir , folderName , files)=>{
+export const createApplicationFiles = async(baseDir , folderName , files)=>{
   const appDir = path.join(baseDir , folderName)
 
   await fs.mkdir(appDir , {recursive : true});
@@ -97,18 +97,11 @@ const createApplicationFiles = async(baseDir , folderName , files)=>{
 
 }
 
-
-export const generateApplication = async (description, aiService, cwd = process.cwd()) => {
-  try {
-    printSystem(chalk.cyan(`\n Agent Mode: Generating your application...\n`));
-    printSystem(chalk.gray(`Request: ${description}\n`));
-
-    printSystem(chalk.magenta("Agent Response: \n"));
-
-    const { object: application } = await generateObject({
-      model: aiService.model,
-      schema: applicationSchema,
-      prompt: `Create a complete, production-ready application for: ${description}
+export const generateApplicationPlan = async (description, aiService) => {
+  const { object: application } = await generateObject({
+    model: aiService.model,
+    schema: applicationSchema,
+    prompt: `Create a complete, production-ready application for: ${description}
 
 CRITICAL REQUIREMENTS:
 1. Generate ALL files needed for the application to run
@@ -125,9 +118,21 @@ Provide:
 - A meaningful kebab-case folder name
 - All necessary files with complete content
 - Setup commands (cd folder, npm install, npm run dev, etc.)
-- All dependencies with versions`
+- All dependencies with versions`,
+  });
 
-    });
+  return application;
+};
+
+
+export const generateApplication = async (description, aiService, cwd = process.cwd()) => {
+  try {
+    printSystem(chalk.cyan(`\n Agent Mode: Generating your application...\n`));
+    printSystem(chalk.gray(`Request: ${description}\n`));
+
+    printSystem(chalk.magenta("Agent Response: \n"));
+
+    const application = await generateApplicationPlan(description, aiService);
 
     printSystem(chalk.green(`\n Generated: ${application.folderName}`));
     printSystem(chalk.green(`\n Description: ${application.description}`));

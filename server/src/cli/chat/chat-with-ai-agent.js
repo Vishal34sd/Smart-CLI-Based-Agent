@@ -4,17 +4,11 @@ import { text, isCancel, cancel, intro, outro, confirm } from "@clack/prompts";
 import yoctoSpinner from "yocto-spinner";
 import { marked } from "marked";
 import { markedTerminal } from "marked-terminal";
-import { AIService } from "../ai/googleService.js";
-import { ChatService } from "../../service/chatService.js";
 import { getStoredToken } from "../../lib/token.js";
-import prisma from "../../lib/db.js";
-import { ensureDbConnection } from "../../lib/dbHealth.js";
-import { generateApplication } from "../../config/agentConfig.js";
+import { createApplicationFiles, displayFileTree } from "../../config/agentConfig.js";
+import { apiRequestSafe } from "../utils/apiClient.js";
 
 marked.use(markedTerminal());
-
-let aiService;
-const chatService = new ChatService();
 
 const getEnabledToolNames = () => {
   return [];
@@ -27,40 +21,31 @@ const getUserFromToken = async () => {
     throw new Error("Not authenticated. Please run 'orbital login' first.");
   }
 
-  const dbOk = await ensureDbConnection();
-  if (!dbOk) {
-    throw new Error(
-      "Database unavailable. Fix DATABASE_URL/connectivity and try again."
-    );
-  }
-
   const spinner = yoctoSpinner({ text: "Authenticating..." }).start();
+  try {
+    const result = await apiRequestSafe("/api/cli/me");
+    const user = result?.user;
 
-  const user = await prisma.user.findFirst({
-    where: {
-      sessions: {
-        some: { token: token.access_token },
-      },
-    },
-  });
+    if (!user) {
+      spinner.error("User not found");
+      throw new Error("User not found. Please login again");
+    }
 
-  if (!user) {
-    spinner.error("User not found");
-    throw new Error("User not found. Please login again");
+    spinner.success(`Welcome back, ${user.name}!`);
+    return user;
+  } finally {
+    spinner.stop();
   }
-
-  spinner.success(`Welcome back, ${user.name}!`);
-  return user;
 };
 
 const initConversation = async (userId, conversationId = null, mode = "tool") => {
   const spinner = yoctoSpinner({ text: "Loading conversation..." }).start();
 
-  const conversation = await chatService.getOrCreateConversation(
-    userId,
-    conversationId,
-    mode
-  );
+  const result = await apiRequestSafe("/api/cli/conversations/init", {
+    method: "POST",
+    body: { conversationId, mode },
+  });
+  const conversation = result?.conversation;
 
   spinner.success("Conversation Loaded");
 
@@ -91,7 +76,10 @@ const initConversation = async (userId, conversationId = null, mode = "tool") =>
 };
 
 const saveMessage = async (conversationId, role, content) => {
-  return await chatService.addMessage(conversationId, role, content);
+  return await apiRequestSafe("/api/cli/messages", {
+    method: "POST",
+    body: { conversationId, role, content },
+  });
 };
 
 const agentLoop = async (conversation) => {
@@ -155,21 +143,30 @@ const agentLoop = async (conversation) => {
     await saveMessage(conversation.id, "user", userInput);
 
     try {
-      const result = await generateApplication(
-        userInput,
-        aiService,
-        process.cwd()
-      );
+      const planResult = await apiRequestSafe("/api/cli/ai/agent", {
+        method: "POST",
+        body: { description: userInput },
+      });
 
-      if (!result || !result.success) {
-        throw new Error("Generation returned no result.");
+      const application = planResult?.application;
+
+      if (!application || !Array.isArray(application.files) || application.files.length === 0) {
+        throw new Error("Generation returned no files.");
       }
 
+      displayFileTree(application.files, application.folderName);
+
+      const appDir = await createApplicationFiles(
+        process.cwd(),
+        application.folderName,
+        application.files
+      );
+
       const responseMessage =
-        `Generated application: ${result.folderName}\n` +
-        `Files created: ${result.files.length}\n` +
-        `Location: ${result.appDir}\n\n` +
-        `Setup commands:\n${result.commands.join("\n")}`;
+        `Generated application: ${application.folderName}\n` +
+        `Files created: ${application.files.length}\n` +
+        `Location: ${appDir}\n\n` +
+        `Setup commands:\n${(application.setupCommands || []).join("\n")}`;
 
       console.log(
         boxen(chalk.green(responseMessage), {
@@ -211,14 +208,6 @@ const agentLoop = async (conversation) => {
 
 export const startAgentChat = async (conversationId = null) => {
   try {
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      throw new Error(
-        "Gemini API key is not set. Run: orbital setkey <your-gemini-api-key>"
-      );
-    }
-
-    aiService = new AIService();
-
     intro(
       boxen(
         chalk.bold.magenta("Orbital AI - Agent Mode\n\n") +

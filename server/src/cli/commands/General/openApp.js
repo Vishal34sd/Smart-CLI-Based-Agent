@@ -2,10 +2,9 @@ import chalk from "chalk";
 import { Command } from "commander";
 import yoctoSpinner from "yocto-spinner";
 import { getStoredToken } from "../../../lib/token.js";
-import prisma from "../../../lib/db.js";
-import { ensureDbConnection } from "../../../lib/dbHealth.js";
 import { select } from "@clack/prompts";
 import {openGithub , openLinkedin ,  openLeetcode , openGmail , openWhatsApp} from "../../../cli/generalApp/Apps.js"
+import { apiRequestSafe } from "../../utils/apiClient.js";
 
 const openAppAction = async () => {
   const token = await getStoredToken();
@@ -15,29 +14,13 @@ const openAppAction = async () => {
     return;
   }
 
-  const dbOk = await ensureDbConnection();
-  if (!dbOk) return;
-
   const spinner = yoctoSpinner({ text: "Fetching user information..." });
   spinner.start();
 
   let user;
   try {
-    user = await prisma.user.findFirst({
-      where: {
-        sessions: {
-          some: {
-            token: token.access_token,
-          },
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-      },
-    });
+    const result = await apiRequestSafe("/api/cli/me");
+    user = result?.user;
   } finally {
     spinner.stop();
   }

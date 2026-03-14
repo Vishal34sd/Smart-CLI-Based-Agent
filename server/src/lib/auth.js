@@ -3,6 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { deviceAuthorization } from "better-auth/plugins"; 
 import prisma from "./db.js";
+import { FRONTEND_URL } from "../config/api.js";
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
@@ -15,13 +16,13 @@ export const auth = betterAuth({
       process.env.BETTER_AUTH_BASE_URL ||
       process.env.FRONTEND_URL ||
       process.env.CLIENT_ORIGIN ||
-      "http://localhost:3000",
+      FRONTEND_URL,
     basePath:"/api/auth" ,
     trustedOrigins: [
       process.env.CLIENT_ORIGIN ||
         process.env.FRONTEND_URL ||
-        "https://smart-cli-based-agent-t7x4.vercel.app",
-      "http://localhost:3000",
+        FRONTEND_URL,
+      FRONTEND_URL,
     ],
     plugins: [
     deviceAuthorization({ 

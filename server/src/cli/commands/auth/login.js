@@ -1,3 +1,4 @@
+import "../../../config/env.js";
 import { cancel, confirm, intro, outro, isCancel } from "@clack/prompts";
 import chalk from "chalk";
 import { Command } from "commander";
@@ -11,14 +12,28 @@ import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import { logger } from "better-auth";
 import { fileURLToPath } from "url";
 import { getStoredToken, isTokenExpired, storeToken ,TOKEN_FILE } from "../../../lib/token.js";
+import { API_BASE } from "../../../config/api.js";
+import { apiRequestSafe } from "../../utils/apiClient.js";
 
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const URL = "https://smart-cli-based-agent.onrender.com";
-const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+const URL = API_BASE;
+
+const resolveClientId = async (cliClientId) => {
+  const resolved = (cliClientId || "").trim();
+  if (resolved.length > 0) return resolved;
+
+  const response = await apiRequestSafe("/auth/github/client-id", {
+    method: "GET",
+    requireAuth: false,
+  });
+
+  const clientId = typeof response?.client_id === "string" ? response.client_id.trim() : "";
+  return clientId.length > 0 ? clientId : undefined;
+};
 
 
 export const loginAction = async (cmdOptions) => {
@@ -43,7 +58,17 @@ export const loginAction = async (cmdOptions) => {
   });
 
   const serverUrl = options.serverUrl || URL;
-  const clientId = options.clientId || CLIENT_ID;
+  const clientId = await resolveClientId(options.clientId);
+
+  if (!clientId) {
+    console.error(chalk.red("GitHub OAuth client ID is not available from the server."));
+    console.log(
+      chalk.gray(
+        "Make sure the backend is deployed and configured with GITHUB_CLIENT_ID.",
+      ),
+    );
+    process.exit(1);
+  }
 
   intro(chalk.bold("Auth CLI Login"));
 
@@ -238,5 +263,5 @@ const pollForToken = async (
 export const login = new Command("login")
   .description("Login to Better Auth")
   .option("--server-url <url>", "The Better Auth server URL", URL)
-  .option("--client-id <id>", "The OAuth client ID", CLIENT_ID)
+  .option("--client-id <id>", "The OAuth client ID")
   .action(loginAction);

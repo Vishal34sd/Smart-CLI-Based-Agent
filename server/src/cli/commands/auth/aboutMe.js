@@ -1,8 +1,9 @@
 import chalk from "chalk";
 import { Command } from "commander";
 import { requireAuth } from "../../../lib/token.js";
+import { API_BASE } from "../../../config/api.js";
 
-const DEFAULT_SERVER_URL = "https://smart-cli-based-agent.onrender.com";
+const DEFAULT_SERVER_URL = API_BASE;
 
 export const whoAmIAction = async (cmdOptions = {})=>{
     const token = await requireAuth();

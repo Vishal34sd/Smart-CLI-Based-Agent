@@ -2,12 +2,11 @@ import chalk from "chalk";
 import {Command} from "commander";
 import yoctoSpinner  from "yocto-spinner";
 import {getStoredToken} from "../../../lib/token.js"
-import prisma from "../../../lib/db.js"
-import { ensureDbConnection } from "../../../lib/dbHealth.js";
 import {select} from "@clack/prompts";
 import {startChat} from "../../../cli/chat/chat-with-ai.js";
 import {startToolChat} from "../../../cli/chat/chat-with-ai-tools.js";
 import {startAgentChat} from "../../../cli/chat/chat-with-ai-agent.js";
+import { apiRequestSafe } from "../../utils/apiClient.js";
 
 
 const wakeUpAction = async()=>{
@@ -17,31 +16,13 @@ const wakeUpAction = async()=>{
         return ;
      }
 
-      const dbOk = await ensureDbConnection();
-      if(!dbOk){
-          return;
-      }
-
      const spinner = yoctoSpinner({text: "Fetching user information ..."})
      spinner.start()
 
      let user;
      try{
-        user = await prisma.user.findFirst({
-            where : {
-                sessions : {
-                    some : {
-                        token : token.access_token
-                    }
-                }
-            },
-            select : {
-                id : true ,
-                name : true ,
-                email : true ,
-                image : true 
-            }
-        });
+        const result = await apiRequestSafe("/api/cli/me");
+        user = result?.user;
      }
      finally{
         spinner.stop();

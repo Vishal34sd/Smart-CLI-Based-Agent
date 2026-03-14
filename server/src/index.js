@@ -5,14 +5,15 @@ import cors from "cors";
 import { auth } from "./lib/auth.js";
 import prisma from "./lib/db.js";
 import { ensureDbConnectionOrExit } from "./lib/dbHealth.js";
+import { FRONTEND_URL } from "./config/api.js";
+import cliRoutes from "./routes/cliRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const CLIENT_ORIGIN =
-  process.env.CLIENT_ORIGIN ||
-  process.env.FRONTEND_URL ||
-  "https://smart-cli-based-agent-t7x4.vercel.app";
+const CLIENT_ORIGIN = FRONTEND_URL;
 
 app.use(express.json());
 
@@ -25,6 +26,8 @@ app.use(
 );
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
+
+app.use("/auth", authRoutes);
 
 app.get("/api/me" , async (req, res)=>{
   const session = await auth.api.getSession({
@@ -71,6 +74,10 @@ app.get("/device" , async(req , res)=>{
   const {user_code} = req.query;
   res.redirect(`${CLIENT_ORIGIN}/device?user_code=${user_code}`)
 });
+
+app.use("/api/cli", cliRoutes);
+
+app.use(errorHandler);
 
 const start = async () => {
   await ensureDbConnectionOrExit({

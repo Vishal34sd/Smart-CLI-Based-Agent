@@ -4,11 +4,8 @@ import {text , isCancel , cancel , intro , outro }from "@clack/prompts";
 import yoctoSpinner from "yocto-spinner";
 import {marked} from "marked";
 import {markedTerminal} from "marked-terminal";
-import {AIService} from "../ai/googleService.js";
-import {ChatService} from "../../service/chatService.js"
 import {getStoredToken} from "../../lib/token.js";
-import prisma from "../../lib/db.js"
-import { ensureDbConnection } from "../../lib/dbHealth.js";
+import { apiRequestSafe } from "../utils/apiClient.js";
 
 marked.use(
     markedTerminal({
@@ -29,43 +26,36 @@ marked.use(
     })
 )
 
-let aiService;
-const chatService = new ChatService();
-
 const getUserFromToken = async()=>{
     const token = await getStoredToken()
     if(!token?.access_token){
         throw new Error("Not authenticated. Please run 'orbital login' first.");
     }
 
-    const dbOk = await ensureDbConnection();
-    if(!dbOk){
-        throw new Error("Database unavailable. Fix DATABASE_URL/connectivity and try again.");
-    }
-
     const spinner = yoctoSpinner({text: "Authenticating..."}).start();
-    const user = await prisma.user.findFirst({
-        where : {
-            sessions : {
-            some : {token : token.access_token} ,
-        }}
-    });
-    if(!user){
-        spinner.error("User not found");
-            throw new Error("User not found. Please login again");     
+    try {
+        const result = await apiRequestSafe("/api/cli/me");
+        const user = result?.user;
+        if(!user){
+            spinner.error("User not found");
+            throw new Error("User not found. Please login again");
+        }
+        spinner.success(`Welcome back , ${user.name}!`);
+        return user;
+    } finally {
+        spinner.stop();
     }
-    spinner.success(`Welcome back , ${user.name}!`);
-    return user;
 }
 
 const initConversation = async(userId , conversationId = null , mode = "chat")=>{
     const spinner = yoctoSpinner({text : "Loading conservation ..."}).start();
 
-    const conversation = await chatService.getOrCreateConversation(
-        userId ,
-        conversationId ,
-        mode
-    )
+    const result = await apiRequestSafe("/api/cli/conversations/init", {
+        method: "POST",
+        body: { conversationId, mode },
+    });
+    const conversation = result?.conversation;
+    const messages = result?.messages || [];
     spinner.success("Conversation Loaded");
 
     const conversationInfo = boxen(
@@ -81,9 +71,9 @@ const initConversation = async(userId , conversationId = null , mode = "chat")=>
     );
     console.log(conversationInfo);
 
-    if(conversation.messages?.length > 0){
+    if(messages.length > 0){
         console.log(chalk.yellow("Previous Messsages: \n"));
-        displayMessages(conversation.messages);
+        displayMessages(messages);
     }
 
     return conversation ;
@@ -117,7 +107,10 @@ const displayMessages = (messages) => {
 };
 
 const saveMessage = async(conversationId , role , content) =>{
-    return await chatService.addMessage(conversationId , role , content)
+    return await apiRequestSafe("/api/cli/messages", {
+        method: "POST",
+        body: { conversationId, role, content },
+    });
 }
 
 const getAIResponse  = async(conversationId)=>{
@@ -126,40 +119,27 @@ const getAIResponse  = async(conversationId)=>{
         color: "cyan"
     }).start();
 
-    const dbMessages = await chatService.getMessages(conversationId);
-    const aiMessages =  chatService.formatMessageForAI(dbMessages);
-
     let fullResponse = "";
-    let isFirstChunk = true ;
      try{
-        const result = await aiService.sendMessage(aiMessages , (chunk)=>{
-            if(isFirstChunk){
-                spinner.stop();
-                console.log("\n");
-                const header = chalk.green.bold("Assistent: ");
-                console.log(header);
-                console.log(chalk.gray("-".repeat(60)));
-                isFirstChunk = false ;
-            }
-            fullResponse += chunk ;
+        const result = await apiRequestSafe("/api/cli/ai/respond", {
+            method: "POST",
+            body: { conversationId, mode: "chat" },
         });
 
-        if(isFirstChunk){
-            spinner.stop();
-            console.log("\n");
-            const header = chalk.green.bold("Assistent: ");
-            console.log(header);
-            console.log(chalk.gray("-".repeat(60)));
-            isFirstChunk = false;
-        }
+        spinner.stop();
+        console.log("\n");
+        const header = chalk.green.bold("Assistent: ");
+        console.log(header);
+        console.log(chalk.gray("-".repeat(60)));
 
+        fullResponse = result?.content || "";
         console.log("\n");
         const renderMarkdown = marked.parse(fullResponse);
         console.log(renderMarkdown);
         console.log(chalk.gray("-".repeat(60)));
         console.log("\n");
 
-        return result.content ;
+        return fullResponse ;
      }
      catch(error){
         spinner.error("Failed to get AI response");
@@ -170,7 +150,10 @@ const getAIResponse  = async(conversationId)=>{
 const updateConversationTitle = async(conversationId , userInput , messageCount)=>{
     if(messageCount ===1){
         const title = userInput.slice(0,50) + (userInput.length > 50 ? "..." : "");
-        await chatService.updateTitle(conversationId , title);
+        await apiRequestSafe(`/api/cli/conversations/${conversationId}/title`, {
+            method: "PATCH",
+            body: { title },
+        });
     }
 }
 
@@ -220,12 +203,18 @@ const chatLoop = async(conversation)=>{
             break ;
         }
         await saveMessage(conversation.id ,  "user" , userInput);
-        const messages = await chatService.getMessages(conversation.id);
+        const messageResult = await apiRequestSafe(
+            `/api/cli/messages?conversationId=${encodeURIComponent(conversation.id)}`,
+            { method: "GET" }
+        );
 
         const aiResponse = await getAIResponse(conversation.id);
-         await saveMessage(conversation.id ,  "assistant" , aiResponse);
 
-         await updateConversationTitle(conversation.id , userInput , messages.length)
+        await updateConversationTitle(
+            conversation.id ,
+            userInput ,
+            messageResult?.messages?.length || 0
+        )
     }
 }
 
@@ -233,14 +222,6 @@ const chatLoop = async(conversation)=>{
 
 export const startChat = async(mode="chat" , conversationId = null)=>{
     try{
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            throw new Error(
-                "Gemini API key is not set. Run: orbital setkey <your-gemini-api-key>"
-            );
-        }
-
-        aiService = new AIService();
-
         intro(
             boxen(chalk.bold.cyan("Orbital AI Chat") , {
                 padding: 1 ,

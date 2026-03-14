@@ -1,18 +1,14 @@
 
-import chalk from "chalk"
-import fs from "fs/promises";
-import os from "os";
-import path from "path";
+import chalk from "chalk";
+import { ORBITAL_CONFIG_FILE, readOrbitalConfig, updateOrbitalConfig } from "./orbitalConfig.js";
 
-
-export const CONFIG_DIR = path.join(os.homedir(), ".better-auth");
-export const TOKEN_FILE = path.join(CONFIG_DIR, "token.json");
+export const TOKEN_FILE = ORBITAL_CONFIG_FILE;
 
 export const getStoredToken = async ()=>{
     try{
-        const data = await fs.readFile(TOKEN_FILE , "utf-8");
-        const token = JSON.parse(data);
-        return token ;
+        const config = await readOrbitalConfig();
+        const token = config?.auth;
+        return token || null;
     }
     catch(error){
         return null ;
@@ -22,8 +18,6 @@ export const getStoredToken = async ()=>{
 
 export const storeToken = async(token)=>{
     try{
-        await fs.mkdir(CONFIG_DIR , { recursive : true });
-
         const tokenData = {
             access_token : token.access_token,
             refresh_token : token.refresh_token ,
@@ -35,7 +29,7 @@ export const storeToken = async(token)=>{
             created_at : new Date().toISOString() ,
         };
 
-        await fs.writeFile(TOKEN_FILE , JSON.stringify(tokenData , null , 2), "utf-8");
+        await updateOrbitalConfig({ auth: tokenData });
         return true ;
     }
     catch(err){
@@ -46,7 +40,7 @@ export const storeToken = async(token)=>{
 
 export const clearStoredToken = async ()=>{
     try{
-        await fs.unlink(TOKEN_FILE);
+        await updateOrbitalConfig({ auth: null });
         return true ;
     }
     catch(err){
