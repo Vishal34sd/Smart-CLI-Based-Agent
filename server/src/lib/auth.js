@@ -13,7 +13,6 @@ export const auth = betterAuth({
     // auth cookies are set on the frontend origin. The OAuth callback must therefore
     // also land on the frontend origin to avoid `state_mismatch`.
     baseURL:
-      process.env.BETTER_AUTH_BASE_URL ||
       process.env.FRONTEND_URL ||
       process.env.CLIENT_ORIGIN ||
       FRONTEND_URL,
