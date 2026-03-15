@@ -166,7 +166,6 @@ export const loginAction = async (cmdOptions) => {
 
       outro(chalk.green("Login successfull !"));
 
-      //console.log(chalk.gray(`\n Token saved to: ${TOKEN_FILE}`));
 
       console.log(
         chalk.gray("You can now use AI commands without logging in again. \n "),
@@ -212,10 +211,6 @@ const pollForToken = async (
         });
 
         if (data?.access_token) {
-          console.log(
-            chalk.bold.yellow(`Your access token: ${data.access_token}`),
-          );
-
           spinner.stop();
           resolve(data);
           return;
