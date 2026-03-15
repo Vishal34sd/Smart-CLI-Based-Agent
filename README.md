@@ -1,108 +1,184 @@
 #  Orbital CLI
 
-**Orbital CLI** is an AI-powered developer CLI that lets you **chat with AI**, run **smart tool-assisted searches**, and even enter **Agent Mode** where it can generate **mini-projects directly inside your directory** — in minutes — from just a single text prompt.
+**Orbital CLI** is an **AI-powered developer assistant** that runs
+directly in your terminal.\
+Chat with AI, perform smart searches, generate mini-projects, and launch
+developer tools --- all without leaving the command line.
 
-Built with **Next.js**, **Node.js**, **Express**, and **Commander.js**, with secure auth powered by **Better Auth (OAuth + Device Authorization)**.
+Built with **Node.js, Express, Commander.js, Next.js**, and **Google
+Gemini AI**.
 
----
+------------------------------------------------------------------------
+
+## ⚡ Installation
+
+Install globally using npm:
+
+    npm install -g @dubeyvishal/orbital-cli
+
+Start Orbital:
+
+    orbital
+
+------------------------------------------------------------------------
+
+## 🔐 Authentication
+
+Login once to enable AI features:
+
+    orbital login
+
+Orbital uses **secure OAuth Device Authorization**.
+
+
+
+------------------------------------------------------------------------
+
+## 🔑 Set Your AI API Key
+
+To use AI features (chat, tools, agent mode), set your own API key:
+    
+    orbital set-key <your_api_key>
+
+The API key is stored securely in your **OS Credential Manager** (Windows Credential Manager / macOS Keychain / Linux Secret Service).
+
+Orbital will **never store your key in plain text files**.
+
+Once set, you won't need to enter it again.
+
+------------------------------------------------------------------------
+
+
+## 💬 AI Chat Mode
+
+Start chatting with AI directly in your terminal:
+
+    orbital wakeup
+
+**Features**
+
+-   Real-time streaming responses
+-   Markdown rendering in terminal
+-   Intelligent context handling
+
+------------------------------------------------------------------------
+
+## 🧠 Tool Calling
+
+Orbital automatically selects tools when needed.
+
+**Examples** - 🌐 Web search\
+- 🔗 URL summarization\
+- 📄 Content extraction\
+- 🧰 Context-aware tool routing
+
+Example prompts:
+
+    summarize https://react.dev
+    latest news about AI agents
+
+Orbital decides which tool to use automatically.
+
+------------------------------------------------------------------------
+
+## 🤖 Agentic Mode (Autonomous Project Generator)
+
+Orbital can generate **complete mini-projects from a single prompt**.
+
+Example:
+
+    create a node express todo api
+
+Orbital will:
+
+-   Create folders and files
+-   Generate working code
+-   Provide install and run commands
+-   Save everything in your current directory
+
+Perfect for:
+
+-   Rapid prototyping
+-   Boilerplate generation
+-   Quick development setups
+
+------------------------------------------------------------------------
+
+## 🚀 Launch Developer Tools
+
+Open commonly used developer platforms instantly.
+
+    orbital launch github
+    orbital launch linkedin
+    orbital launch leetcode
+    orbital launch youtube
+
+No need to open the browser manually.
+
+------------------------------------------------------------------------
+
+## 🔎 Instant YouTube Search
+
+Search YouTube directly from the terminal.
+
+    orbital search "react server components"
+
+Orbital will open the results instantly.
+
+------------------------------------------------------------------------
 
 ## 📸 Project Screenshots
 
-### 🔐 Orbital Login Screen
-![Orbital Login Screen](https://res.cloudinary.com/damw21f39/image/upload/v1773569580/pic1_u0wu0y.png)
+### 🔐 Orbital Login
 
-### 🛠️ Orbital Wakeup – Tools Loaded
-![Orbital Wakeup](https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic2_mvnpiu.png)
+https://res.cloudinary.com/damw21f39/image/upload/v1773569580/pic1_u0wu0y.png
+
+### 🛠 Orbital Wakeup
+
+https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic2_mvnpiu.png
 
 ### 🤖 Agentic Mode
-![Agentic Mode](https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic3_bvidmp.png)
 
----
+https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic3_bvidmp.png
 
-## ✨ Features
-
-###  AI Chat Mode
-- Chat with AI directly in your terminal
-- Streaming responses (real-time)
-- Supports markdown rendering in terminal output
-
-### 🧠 Autonomous Tool Selection
-Orbital intelligently selects tools when needed:
-- 🔍 Web Search
-- 🔗 URL Search / Page Summarization
-- 🧰 Context-based tool routing (AI decides when to use tools)
-
-### 🤖 Agent Mode (Autonomous App Generator)
-The most powerful mode:
-- Generates **mini-projects** from a single prompt
-- Creates **folders + files automatically**
-- Writes production-ready code
-- Generates setup commands
-- Output saved neatly into your working directory
-- Designed to build a runnable project in **a few minutes**
-
-### 🔐 Secure Authentication
-- OAuth using **Better Auth**
-- **Device Authorization flow**
-- Session + token handling
-
----
+------------------------------------------------------------------------
 
 ## 🧱 Tech Stack
-- **Next.js** (Dashboard / Web UI)
-- **Node.js**
-- **Express.js**
-- **Commander.js** (CLI framework)
-- **Better Auth** (OAuth + Device Flow)
-- **Prisma** (Database ORM)
-- **Neon PostgreSQL** (recommended)
-- **AI SDK (Google Gemini)**
 
----
+-   **Node.js**
+-   **Express.js**
+-   **Commander.js**
+-   **Next.js**
+-   **Prisma**
+-   **Neon PostgreSQL**
+-   **Google Gemini AI**
 
-## 📦 Installation
+------------------------------------------------------------------------
 
-## Deployed URLs
+## 🌐 Deployed Services
 
-- Frontend (Vercel): https://smart-cli-based-agent-t7x4.vercel.app/sign-in
-- Backend (Render): https://smart-cli-based-agent.onrender.com
+**Frontend**\
+https://smart-cli-based-agent-t7x4.vercel.app
 
-Clone the repo:
+**Backend**\
+https://smart-cli-based-agent.onrender.com
 
-```bash
-git clone https://github.com/<your-username>/orbital-cli.git
-cd orbital-cli
+------------------------------------------------------------------------
 
-```
+## 📦 npm Package
 
-Environment Setup
+https://www.npmjs.com/package/@dubeyvishal/orbital-cli
 
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
-GOOGLE_GEMINI_API_KEY="your_api_key"
-ORBITAL_MODEL="gemini-2.5-flash"
+------------------------------------------------------------------------
 
-# Deployed URLs
-BETTER_AUTH_BASE_URL="https://smart-cli-based-agent.onrender.com"
-FRONTEND_URL="https://smart-cli-based-agent-t7x4.vercel.app"
+## 📄 License
 
-Then generate Prisma client + sync schema:
+**MIT License**
 
-cd server
-npx prisma generate
-npx prisma db push
+------------------------------------------------------------------------
 
-Run Orbital CLI:
-orbital
+## 👨‍💻 Developed and Maintained By
 
-Orbital uses secure OAuth + Device Authorization:
-orbital login
+**Vishal Dubey**
 
-Chat with AI
-orbital wakeup
-Output
-When agent generation succeeds, Orbital shows:
-
-App folder name
-Total files created
-Location on disk
-Setup commands (install, run)
+If you find Orbital CLI useful, consider giving the repository a ⭐ on GitHub.
