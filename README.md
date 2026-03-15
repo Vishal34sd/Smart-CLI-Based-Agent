@@ -9,13 +9,13 @@ Built with **Next.js**, **Node.js**, **Express**, and **Commander.js**, with sec
 ## 📸 Project Screenshots
 
 ### 🔐 Orbital Login Screen
-![Orbital Login Screen](./images/pic1.png)
+![Orbital Login Screen](https://raw.githubusercontent.com/Vishal34sd/Smart-CLI-Based-Agent/ba19862ef68ca2c53acc3d2000c16071ac8c9a84/images/pic1.png)
 
 ### 🛠️ Orbital Wakeup – Tools Loaded
-![Orbital Wakeup](./images/pic2.png)
+![Orbital Wakeup](https://raw.githubusercontent.com/Vishal34sd/Smart-CLI-Based-Agent/ba19862ef68ca2c53acc3d2000c16071ac8c9a84/images/pic2.png)
 
 ### 🤖 Agentic Mode
-![Agentic Mode](./images/pic3.png)
+![Agentic Mode](https://raw.githubusercontent.com/Vishal34sd/Smart-CLI-Based-Agent/ba19862ef68ca2c53acc3d2000c16071ac8c9a84/images/pic3.png)
 
 ---
 
