@@ -14,6 +14,7 @@ import { fileURLToPath } from "url";
 import { getStoredToken, isTokenExpired, storeToken ,TOKEN_FILE } from "../../../lib/token.js";
 import { API_BASE } from "../../../config/api.js";
 import { apiRequestSafe } from "../../utils/apiClient.js";
+import { requireGeminiApiKey } from "../../../lib/orbitalConfig.js";
 
 
 
@@ -37,13 +38,10 @@ const resolveClientId = async (cliClientId) => {
 
 
 export const loginAction = async (cmdOptions) => {
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    console.log(chalk.red("Gemini API key is not set."));
-    console.log(
-      chalk.gray(
-        "Run: orbital setkey <your-gemini-api-key>\nThen run: orbital login",
-      ),
-    );
+  try {
+    await requireGeminiApiKey();
+  } catch {
+    console.log(chalk.red("Gemini API key not set. Run: orbital set-key <API_KEY>"));
     process.exit(1);
   }
 

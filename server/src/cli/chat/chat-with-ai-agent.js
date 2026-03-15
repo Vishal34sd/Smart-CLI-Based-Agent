@@ -5,8 +5,14 @@ import yoctoSpinner from "yocto-spinner";
 import { marked } from "marked";
 import { markedTerminal } from "marked-terminal";
 import { getStoredToken } from "../../lib/token.js";
-import { createApplicationFiles, displayFileTree } from "../../config/agentConfig.js";
+import {
+  createApplicationFiles,
+  displayFileTree,
+  generateApplicationPlan,
+} from "../../config/agentConfig.js";
 import { apiRequestSafe } from "../utils/apiClient.js";
+import { AIService } from "../ai/googleService.js";
+import { requireGeminiApiKey } from "../../lib/orbitalConfig.js";
 
 marked.use(markedTerminal());
 
@@ -143,12 +149,9 @@ const agentLoop = async (conversation) => {
     await saveMessage(conversation.id, "user", userInput);
 
     try {
-      const planResult = await apiRequestSafe("/api/cli/ai/agent", {
-        method: "POST",
-        body: { description: userInput },
-      });
-
-      const application = planResult?.application;
+      await requireGeminiApiKey();
+      const aiService = new AIService();
+      const application = await generateApplicationPlan(userInput, aiService);
 
       if (!application || !Array.isArray(application.files) || application.files.length === 0) {
         throw new Error("Generation returned no files.");

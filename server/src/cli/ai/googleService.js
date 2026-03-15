@@ -2,15 +2,14 @@ import { google } from "@ai-sdk/google";
 import { streamText, generateObject } from "ai";
 import { config } from "../../config/googleConfig.js";
 import chalk from "chalk";
+import { requireGeminiApiKeySync } from "../../lib/orbitalConfig.js";
 
 export class AIService {
   constructor() {
-    if (!config.googleApiKey) {
-      throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set in env");
-    }
+    const apiKey = requireGeminiApiKeySync();
 
     this.model = google(config.model, {
-      apiKey: config.googleApiKey,
+      apiKey,
     });
   }
 

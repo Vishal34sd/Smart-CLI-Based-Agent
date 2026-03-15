@@ -1,5 +1,6 @@
 import { google } from "@ai-sdk/google";
 import chalk from "chalk";
+import { requireGeminiApiKeySync } from "../lib/orbitalConfig.js";
 
 export const availableTools = [
   {
@@ -32,6 +33,12 @@ export const getEnabledTools = () => {
   const tools = {};
 
   try {
+    const enabledToolCount = availableTools.filter((t) => t.enabled).length;
+    if (enabledToolCount > 0 && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      
+      requireGeminiApiKeySync();
+    }
+
     for (const toolConfig of availableTools) {
       if (toolConfig.enabled) {
         tools[toolConfig.id] = toolConfig.getTool();

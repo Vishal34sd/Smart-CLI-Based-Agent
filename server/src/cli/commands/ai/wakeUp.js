@@ -7,9 +7,17 @@ import {startChat} from "../../../cli/chat/chat-with-ai.js";
 import {startToolChat} from "../../../cli/chat/chat-with-ai-tools.js";
 import {startAgentChat} from "../../../cli/chat/chat-with-ai-agent.js";
 import { apiRequestSafe } from "../../utils/apiClient.js";
+import { requireGeminiApiKey } from "../../../lib/orbitalConfig.js";
 
 
 const wakeUpAction = async()=>{
+    try {
+        await requireGeminiApiKey();
+    } catch {
+        console.log(chalk.red("Gemini API key not set. Run: orbital set-key <API_KEY>"));
+        return;
+    }
+
     const token = await getStoredToken();
      if(!token?.access_token){
         console.log(chalk.red("Not Authenticated. please login"))

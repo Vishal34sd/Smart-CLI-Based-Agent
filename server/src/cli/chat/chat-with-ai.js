@@ -6,6 +6,8 @@ import {marked} from "marked";
 import {markedTerminal} from "marked-terminal";
 import {getStoredToken} from "../../lib/token.js";
 import { apiRequestSafe } from "../utils/apiClient.js";
+import { AIService } from "../ai/googleService.js";
+import { requireGeminiApiKey } from "../../lib/orbitalConfig.js";
 
 marked.use(
     markedTerminal({
@@ -121,10 +123,17 @@ const getAIResponse  = async(conversationId)=>{
 
     let fullResponse = "";
      try{
-        const result = await apiRequestSafe("/api/cli/ai/respond", {
-            method: "POST",
-            body: { conversationId, mode: "chat" },
-        });
+        const messageResult = await apiRequestSafe(
+            `/api/cli/messages?conversationId=${encodeURIComponent(conversationId)}`,
+            { method: "GET" }
+        );
+
+        const messages = Array.isArray(messageResult?.messages) ? messageResult.messages : [];
+        const aiMessages = messages.map((m) => ({ role: m.role, content: m.content }));
+
+        await requireGeminiApiKey();
+        const aiService = new AIService();
+        const result = await aiService.sendMessage(aiMessages);
 
         spinner.stop();
         console.log("\n");
@@ -209,6 +218,7 @@ const chatLoop = async(conversation)=>{
         );
 
         const aiResponse = await getAIResponse(conversation.id);
+        await saveMessage(conversation.id ,  "assistant" , aiResponse);
 
         await updateConversationTitle(
             conversation.id ,

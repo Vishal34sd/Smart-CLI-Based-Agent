@@ -15,10 +15,13 @@ import { getStoredToken } from "../../lib/token.js";
 import {
   availableTools,
   enableTools,
+  getEnabledTools,
   getEnabledToolNames,
   resetTools,
 } from "../../config/toolConfig.js";
 import { apiRequestSafe } from "../utils/apiClient.js";
+import { AIService } from "../ai/googleService.js";
+import { requireGeminiApiKey } from "../../lib/orbitalConfig.js";
 
 marked.use(
   markedTerminal({
@@ -213,10 +216,24 @@ const getAIResponse = async (conversationId, toolIds = []) => {
   const toolCallsDetected = [];
 
   try {
-    const result = await apiRequestSafe("/api/cli/ai/respond", {
-      method: "POST",
-      body: { conversationId, mode: "tool", toolIds },
-    });
+    const messageResult = await apiRequestSafe(
+      `/api/cli/messages?conversationId=${encodeURIComponent(conversationId)}`,
+      { method: "GET" }
+    );
+
+    const messages = Array.isArray(messageResult?.messages) ? messageResult.messages : [];
+    const aiMessages = messages.map((m) => ({ role: m.role, content: m.content }));
+
+    // Ensure the API key is present in env before any tools are initialized.
+    await requireGeminiApiKey();
+
+    // Ensure tool state matches what the user selected.
+    resetTools();
+    if (Array.isArray(toolIds)) enableTools(toolIds);
+
+    const tools = getEnabledTools();
+    const aiService = new AIService();
+    const result = await aiService.sendMessage(aiMessages, null, tools);
 
     spinner.stop();
     console.log("\n");
@@ -224,9 +241,7 @@ const getAIResponse = async (conversationId, toolIds = []) => {
     console.log(chalk.gray("-".repeat(60)));
 
     fullResponse = result?.content || "";
-    if (Array.isArray(result?.toolCalls)) {
-      toolCallsDetected.push(...result.toolCalls);
-    }
+    if (Array.isArray(result?.toolCalls)) toolCallsDetected.push(...result.toolCalls);
 
     if (toolCallsDetected.length > 0) {
       console.log("\n");
@@ -360,6 +375,7 @@ const chatLoop = async (conversation, selectedToolIds = []) => {
     );
 
     const aiResponse = await getAIResponse(conversation.id, selectedToolIds);
+    await saveMessage(conversation.id, "assistant", aiResponse);
 
     await updateConversationTitle(
       conversation.id,
