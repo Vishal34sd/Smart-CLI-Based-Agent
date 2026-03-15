@@ -22,6 +22,21 @@ Start Orbital:
 
 ------------------------------------------------------------------------
 
+## 📸 Project Screenshots
+
+### 🔐 Orbital Login Screen
+![Orbital Login Screen](https://res.cloudinary.com/damw21f39/image/upload/v1773569580/pic1_u0wu0y.png)
+
+### 🛠️ Orbital Wakeup – Tools Loaded
+![Orbital Wakeup](https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic2_mvnpiu.png)
+
+### 🤖 Agentic Mode
+![Agentic Mode](https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic3_bvidmp.png)
+
+------------------------------------------------------------------------
+
+
+
 ## 🔐 Authentication
 
 Login once to enable AI features:
@@ -125,21 +140,6 @@ Search YouTube directly from the terminal.
 
 Orbital will open the results instantly.
 
-------------------------------------------------------------------------
-
-## 📸 Project Screenshots
-
-### 🔐 Orbital Login
-
-https://res.cloudinary.com/damw21f39/image/upload/v1773569580/pic1_u0wu0y.png
-
-### 🛠 Orbital Wakeup
-
-https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic2_mvnpiu.png
-
-### 🤖 Agentic Mode
-
-https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic3_bvidmp.png
 
 ------------------------------------------------------------------------
 
