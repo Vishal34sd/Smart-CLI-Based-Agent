@@ -1,6 +1,6 @@
 {
   "name": "@dubeyvishal/orbital-cli",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A fullstack CLI-based AI platform with chat mode, multi-tool agents, and agentic AI workflows. Includes GitHub login with device authorization, secure authentication, and modular client–server architecture for building intelligent automation tools.",
   "author": "Vishal Dubey",
   "license": "MIT",
@@ -40,12 +40,13 @@
     "zod": "^4.3.5"
   },
   "scripts": {
-    "postinstall": "cd server && npx prisma generate",
+   "postinstall": "npx prisma generate --schema=./server/prisma/schema.prisma",
     "install-all": "npm install --prefix client && npm install --prefix server",
     "start-client": "npm start --prefix client",
     "start-server": "npm start --prefix server",
     "dev": "npm run start-server && npm run start-client"
   },
+  
   "keywords": [
     "orbital",
     "cli",

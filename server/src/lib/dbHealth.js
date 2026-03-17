@@ -100,7 +100,7 @@ export const ensureDbConnectionOrExit = async (options = {}) => {
   const ok = await ensureDbConnectionWithRetry(options);
   if (ok) return true;
 
-  // eslint-disable-next-line no-console
+  
   console.error(chalk.red("\nServer cannot start without database connectivity. Exiting."));
   process.exit(1);
 };
