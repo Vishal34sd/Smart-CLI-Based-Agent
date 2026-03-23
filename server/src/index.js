@@ -16,18 +16,28 @@ const CLIENT_ORIGIN = FRONTEND_URL;
 
 app.use(express.json());
 
-// Skip Express cors for /api/auth/* routes — better-auth handles its own CORS.
-const corsMiddleware = cors({
-  origin: CLIENT_ORIGIN,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true,
-});
-app.use((req, res, next) => {
-  if (req.path.startsWith("/api/auth/")) return next();
-  corsMiddleware(req, res, next);
-});
+// ── CORS: single source of truth for every route ──────────────────────
+app.use(
+  cors({
+    origin: CLIENT_ORIGIN,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
 
-app.all("/api/auth/*splat", toNodeHandler(auth));
+// Wrap the better-auth handler so it can never override the origin with "*".
+const authHandler = toNodeHandler(auth);
+app.all("/api/auth/*splat", (req, res) => {
+  const _setHeader = res.setHeader.bind(res);
+  res.setHeader = function (name, value) {
+    // Force the correct origin for any CORS header better-auth sets.
+    if (name.toLowerCase() === "access-control-allow-origin") {
+      return _setHeader(name, CLIENT_ORIGIN);
+    }
+    return _setHeader(name, value);
+  };
+  authHandler(req, res);
+});
 
 app.use("/auth", authRoutes);
 
