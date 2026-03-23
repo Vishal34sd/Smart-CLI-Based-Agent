@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 // Load env from the server package root (server/.env) regardless of where the process is started.
 const serverEnvPath = path.resolve(__dirname, "../../.env");
 
-dotenv.config({ path: serverEnvPath });
+dotenv.config({ path: serverEnvPath, quiet: true });
 
 // Note: The Gemini API key is stored in the OS credential manager via keytar.
 // CLI code will hydrate GOOGLE_GENERATIVE_AI_API_KEY from keytar when needed.

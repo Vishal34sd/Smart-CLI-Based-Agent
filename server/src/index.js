@@ -16,13 +16,16 @@ const CLIENT_ORIGIN = FRONTEND_URL;
 
 app.use(express.json());
 
-app.use(
-  cors({
-    origin: CLIENT_ORIGIN,
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+// Skip Express cors for /api/auth/* routes — better-auth handles its own CORS.
+const corsMiddleware = cors({
+  origin: CLIENT_ORIGIN,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/auth/")) return next();
+  corsMiddleware(req, res, next);
+});
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 

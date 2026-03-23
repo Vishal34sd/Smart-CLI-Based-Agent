@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { deviceAuthorization } from "better-auth/plugins";
 import prisma from "./db.js";
-import { FRONTEND_URL } from "../config/api.js";
+import { API_BASE, FRONTEND_URL } from "../config/api.js";
 
 const CLIENT_ORIGIN =
   process.env.CLIENT_ORIGIN ||
@@ -15,11 +15,10 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
-  baseURL: CLIENT_ORIGIN,
+  baseURL: API_BASE,
   basePath: "/api/auth",
 
   trustedOrigins: [CLIENT_ORIGIN],
-
 
   cors: {
     origin: CLIENT_ORIGIN,
