@@ -23,17 +23,27 @@ const URL = API_BASE;
  * Request a device authorization code from the server via direct fetch.
  * Replaces: authClient.device.code()
  */
+const safeJson = async (res) => {
+  const text = await res.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
 const requestDeviceCode = async (serverUrl, clientId, scope) => {
-  const res = await fetch(`${serverUrl}/api/auth/device/authorize`, {
+  const res = await fetch(`${serverUrl}/api/auth/device/code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ client_id: clientId, scope }),
   });
 
-  const body = await res.json();
+  const body = await safeJson(res);
 
   if (!res.ok) {
-    return { data: null, error: body };
+    return { data: null, error: body || { message: `HTTP ${res.status}` } };
   }
   return { data: body, error: null };
 };
@@ -56,10 +66,10 @@ const requestDeviceToken = async (serverUrl, deviceCode, clientId) => {
     }),
   });
 
-  const body = await res.json();
+  const body = await safeJson(res);
 
   if (!res.ok) {
-    return { data: null, error: body };
+    return { data: null, error: body || { message: `HTTP ${res.status}` } };
   }
   return { data: body, error: null };
 };
