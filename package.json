@@ -11,7 +11,6 @@
   },
   "files": [
     "server/src",
-    "server/prisma",
     "README.md"
   ],
   "publishConfig": {
@@ -23,9 +22,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.6",
     "@clack/prompts": "^0.11.0",
-    "@prisma/client": "^5.22.0",
     "ai": "^6.0.29",
-    "better-auth": "^1.4.10",
     "boxen": "^8.0.1",
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
@@ -35,12 +32,10 @@
     "marked": "^15.0.12",
     "marked-terminal": "^7.3.0",
     "open": "^11.0.0",
-    "prisma": "^5.22.0",
     "yocto-spinner": "^1.0.0",
     "zod": "^4.3.5"
   },
   "scripts": {
-   "postinstall": "npx prisma generate --schema=./server/prisma/schema.prisma",
     "install-all": "npm install --prefix client && npm install --prefix server",
     "start-client": "npm start --prefix client",
     "start-server": "npm start --prefix server",

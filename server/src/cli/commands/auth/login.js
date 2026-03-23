@@ -9,7 +9,7 @@ import yoctoSpinner from "yocto-spinner";
 import * as z from "zod";
 import { createAuthClient } from "better-auth/client";
 import { deviceAuthorizationClient } from "better-auth/client/plugins";
-import { logger } from "better-auth";
+
 import { fileURLToPath } from "url";
 import { getStoredToken, isTokenExpired, storeToken ,TOKEN_FILE } from "../../../lib/token.js";
 import { API_BASE } from "../../../config/api.js";
@@ -233,7 +233,7 @@ const pollForToken = async (
               return;
             default:
               spinner.stop();
-              logger.error(`Error: ${error.error_description}`);
+              console.error(`Error: ${error.error_description}`);
               reject(
                 new Error(error.error_description || "Unknown device error"),
               );
@@ -242,7 +242,7 @@ const pollForToken = async (
         }
       } catch (err) {
         spinner.stop();
-        logger.error(`Error: ${err?.message || err}`);
+        console.error(`Error: ${err?.message || err}`);
         return;
       }
 
