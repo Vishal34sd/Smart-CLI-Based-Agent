@@ -3,12 +3,9 @@ import { cancel, confirm, intro, outro, isCancel } from "@clack/prompts";
 import chalk from "chalk";
 import { Command } from "commander";
 import open from "open";
-import os from "os";
 import path from "path";
 import yoctoSpinner from "yocto-spinner";
 import * as z from "zod";
-import { createAuthClient } from "better-auth/client";
-import { deviceAuthorizationClient } from "better-auth/client/plugins";
 
 import { fileURLToPath } from "url";
 import { getStoredToken, isTokenExpired, storeToken ,TOKEN_FILE } from "../../../lib/token.js";
@@ -17,11 +14,55 @@ import { apiRequestSafe } from "../../utils/apiClient.js";
 import { requireGeminiApiKey } from "../../../lib/orbitalConfig.js";
 
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const URL = API_BASE;
+
+/**
+ * Request a device authorization code from the server via direct fetch.
+ * Replaces: authClient.device.code()
+ */
+const requestDeviceCode = async (serverUrl, clientId, scope) => {
+  const res = await fetch(`${serverUrl}/api/auth/device/authorize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ client_id: clientId, scope }),
+  });
+
+  const body = await res.json();
+
+  if (!res.ok) {
+    return { data: null, error: body };
+  }
+  return { data: body, error: null };
+};
+
+/**
+ * Poll for a device token from the server via direct fetch.
+ * Replaces: authClient.device.token()
+ */
+const requestDeviceToken = async (serverUrl, deviceCode, clientId) => {
+  const res = await fetch(`${serverUrl}/api/auth/device/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "user-agent": "Orbital CLI",
+    },
+    body: JSON.stringify({
+      grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+      device_code: deviceCode,
+      client_id: clientId,
+    }),
+  });
+
+  const body = await res.json();
+
+  if (!res.ok) {
+    return { data: null, error: body };
+  }
+  return { data: body, error: null };
+};
 
 const resolveClientId = async (cliClientId) => {
   const resolved = (cliClientId || "").trim();
@@ -85,20 +126,16 @@ export const loginAction = async (cmdOptions) => {
     }
   }
 
-  const authClient = createAuthClient({
-    baseURL: serverUrl,
-    plugins: [deviceAuthorizationClient()],
-  });
-
   const spinner = yoctoSpinner({
     text: "Requesting device authorization...",
   }).start();
 
   try {
-    const { data, error } = await authClient.device.code({
-      client_id: clientId,
-      scope: "openid profile email",
-    });
+    const { data, error } = await requestDeviceCode(
+      serverUrl,
+      clientId,
+      "openid profile email",
+    );
 
     spinner.stop();
 
@@ -150,7 +187,7 @@ export const loginAction = async (cmdOptions) => {
     );
 
     const token = await pollForToken(
-      authClient,
+      serverUrl,
       device_code,
       clientId,
       interval,
@@ -179,7 +216,7 @@ export const loginAction = async (cmdOptions) => {
 };
 
 const pollForToken = async (
-  authClient,
+  serverUrl,
   deviceCode,
   clientId,
   initialInterval,
@@ -199,16 +236,11 @@ const pollForToken = async (
       if (!spinner.isSpinning) spinner.start();
 
       try {
-        const { data, error } = await authClient.device.token({
-          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-          device_code: deviceCode,
-          client_id: clientId,
-          fetchOptions: {
-            headers: {
-              "user-agent": `My CLI`,
-            },
-          },
-        });
+        const { data, error } = await requestDeviceToken(
+          serverUrl,
+          deviceCode,
+          clientId,
+        );
 
         if (data?.access_token) {
           spinner.stop();
@@ -254,7 +286,7 @@ const pollForToken = async (
 };
 
 export const login = new Command("login")
-  .description("Login to Better Auth")
-  .option("--server-url <url>", "The Better Auth server URL", URL)
+  .description("Login to Orbital CLI")
+  .option("--server-url <url>", "The server URL", URL)
   .option("--client-id <id>", "The OAuth client ID")
   .action(loginAction);
