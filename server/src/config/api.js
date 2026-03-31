@@ -18,5 +18,5 @@ export const FRONTEND_URL = stripTrailingSlash(
 );
 
 export const AUTH_BASE_URL = stripTrailingSlash(
-  process.env.BETTER_AUTH_BASE_URL || API_BASE
+  process.env.BETTER_AUTH_BASE_URL || FRONTEND_URL || API_BASE
 );
