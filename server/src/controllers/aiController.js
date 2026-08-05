@@ -1,5 +1,5 @@
-import { ChatService } from "../services/chatService.js";
-import { getAIService } from "../services/aiService.js";
+import { ChatService } from "../service/chatService.js";
+import { getAIService } from "../service/aiService.js";
 import { enableTools, getEnabledTools, resetTools } from "../config/toolConfig.js";
 import { generateApplicationPlan } from "../config/agentConfig.js";
 

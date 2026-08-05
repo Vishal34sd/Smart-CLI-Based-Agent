@@ -14,9 +14,6 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 const CLIENT_ORIGIN = FRONTEND_URL;
 
-app.use(express.json());
-
-// ── CORS: single source of truth for every route ──────────────────────
 app.use(
   cors({
     origin: CLIENT_ORIGIN,
@@ -25,12 +22,10 @@ app.use(
   })
 );
 
-// Wrap the better-auth handler so it can never override the origin with "*".
 const authHandler = toNodeHandler(auth);
 app.all("/api/auth/*splat", (req, res) => {
   const _setHeader = res.setHeader.bind(res);
   res.setHeader = function (name, value) {
-    // Force the correct origin for any CORS header better-auth sets.
     if (name.toLowerCase() === "access-control-allow-origin") {
       return _setHeader(name, CLIENT_ORIGIN);
     }
@@ -38,6 +33,8 @@ app.all("/api/auth/*splat", (req, res) => {
   };
   authHandler(req, res);
 });
+
+app.use(express.json());
 
 app.use("/auth", authRoutes);
 

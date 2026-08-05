@@ -1,4 +1,4 @@
-import { ChatService } from "../services/chatService.js";
+import { ChatService } from "../service/chatService.js";
 
 const chatService = new ChatService();
 

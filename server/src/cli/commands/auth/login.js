@@ -78,13 +78,17 @@ const resolveClientId = async (cliClientId) => {
   const resolved = (cliClientId || "").trim();
   if (resolved.length > 0) return resolved;
 
-  const response = await apiRequestSafe("/auth/github/client-id", {
-    method: "GET",
-    requireAuth: false,
-  });
+  try {
+    const response = await apiRequestSafe("/auth/github/client-id", {
+      method: "GET",
+      requireAuth: false,
+    });
 
-  const clientId = typeof response?.client_id === "string" ? response.client_id.trim() : "";
-  return clientId.length > 0 ? clientId : undefined;
+    const clientId = typeof response?.client_id === "string" ? response.client_id.trim() : "";
+    return clientId.length > 0 ? clientId : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 
