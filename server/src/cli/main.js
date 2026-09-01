@@ -12,6 +12,7 @@ import {setkey} from "./commands/config/setkey.js"
 import {launch} from "./commands/General/openApp.js"
 import {search} from "./commands/General/searchYoutube.js"
 import {play} from "./commands/General/playSong.js"
+import {packageJson} from "./package.json";
 
 const main = async()=>{
 
@@ -29,7 +30,7 @@ const main = async()=>{
     
 
 
-    program.version("0.0.1").
+    program.version(packageJson.version).
     description("Orbital CLI - A CLI Based AI Tool").
     addCommand(login).
     addCommand(logout).
