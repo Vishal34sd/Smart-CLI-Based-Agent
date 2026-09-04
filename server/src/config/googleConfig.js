@@ -2,5 +2,5 @@ import "./env.js";
 
 export const config = {
     googleApiKey : process.env.GOOGLE_GENERATIVE_AI_API_KEY || "",
-    model : process.env.ORBITAL_MODEL || "gemini-3.5-flash-lite"
+    model : process.env.ORBITAL_MODEL || "gemini-2.5-flash"
 }

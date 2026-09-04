@@ -12,13 +12,11 @@ import {
 } from "../../config/agentConfig.js";
 import { apiRequestSafe } from "../utils/apiClient.js";
 import { AIService } from "../ai/googleService.js";
-import { requireGeminiApiKey } from "../../lib/orbitalConfig.js";
+import { requireApiKey, hydrateApiKeyEnv } from "../../lib/orbitalConfig.js";
+import { parseModelChoice } from "../../config/aiConfig.js";
+
 
 marked.use(markedTerminal());
-
-const getEnabledToolNames = () => {
-  return [];
-};
 
 const getUserFromToken = async () => {
   const token = await getStoredToken();
@@ -44,7 +42,12 @@ const getUserFromToken = async () => {
   }
 };
 
-const initConversation = async (userId, conversationId = null, mode = "tool") => {
+const initConversation = async (
+  userId,
+  conversationId = null,
+  mode = "agent",
+  modelDisplayName = null
+) => {
   const spinner = yoctoSpinner({ text: "Loading conversation..." }).start();
 
   const result = await apiRequestSafe("/api/cli/conversations/init", {
@@ -55,16 +58,14 @@ const initConversation = async (userId, conversationId = null, mode = "tool") =>
 
   spinner.success("Conversation Loaded");
 
-  const enabledToolNames = getEnabledToolNames();
-  const toolsDisplay =
-    enabledToolNames.length > 0
-      ? `\n${chalk.gray("Active Tools:")} ${enabledToolNames.join(", ")}`
-      : `\n${chalk.gray("No tools enabled")}`;
+  const modelLine = modelDisplayName
+    ? `\n${chalk.cyan("Model: " + modelDisplayName)}`
+    : "";
 
   const conversationInfo = boxen(
     `${chalk.bold("Conversation")}: ${conversation.title}\n${chalk.gray(
       "ID: " + conversation.id
-    )}\n${chalk.gray("Mode: " + conversation.mode)}${toolsDisplay}\n${chalk.cyan(
+    )}\n${chalk.gray("Mode: " + conversation.mode)}${modelLine}\n${chalk.cyan(
       "Working Directory: "
     )}${process.cwd()}`,
     {
@@ -88,7 +89,7 @@ const saveMessage = async (conversationId, role, content) => {
   });
 };
 
-const agentLoop = async (conversation) => {
+const agentLoop = async (conversation, modelConfig = null) => {
   const helpBox = boxen(
     `${chalk.cyan.bold("What can the agent do?")}\n\n` +
       `${chalk.gray("• Generate complete applications from descriptions")}\n` +
@@ -113,8 +114,8 @@ const agentLoop = async (conversation) => {
 
   while (true) {
     const userInput = await text({
-      message: chalk.magenta("What would you like to build?"),
-      placeholder: "Describe your application...",
+      message: chalk.magenta("Describe the application you want to build:"),
+      placeholder: "e.g., A CLI todo app with SQLite, or a React counter app",
       validate(value) {
         if (!value || value.trim().length === 0) {
           return "Description cannot be empty";
@@ -149,8 +150,8 @@ const agentLoop = async (conversation) => {
     await saveMessage(conversation.id, "user", userInput);
 
     try {
-      await requireGeminiApiKey();
-      const aiService = new AIService();
+      const aiService = new AIService(modelConfig);
+      await requireApiKey(aiService.provider);
       const application = await generateApplicationPlan(userInput, aiService);
 
       if (!application || !Array.isArray(application.files) || application.files.length === 0) {
@@ -209,7 +210,17 @@ const agentLoop = async (conversation) => {
   }
 };
 
-export const startAgentChat = async (conversationId = null) => {
+export const startAgentChat = async (modelConfigOrConvId = null, convId = null) => {
+  let modelConfig = null;
+  let conversationId = null;
+
+  if (typeof modelConfigOrConvId === "string") {
+    conversationId = modelConfigOrConvId;
+  } else if (modelConfigOrConvId && typeof modelConfigOrConvId === "object") {
+    modelConfig = modelConfigOrConvId;
+    conversationId = convId;
+  }
+
   try {
     intro(
       boxen(
@@ -222,6 +233,10 @@ export const startAgentChat = async (conversationId = null) => {
         }
       )
     );
+
+    const { provider } = parseModelChoice(modelConfig);
+    await hydrateApiKeyEnv(provider);
+    const aiService = new AIService(modelConfig);
 
     const user = await getUserFromToken();
 
@@ -237,8 +252,13 @@ export const startAgentChat = async (conversationId = null) => {
       process.exit(0);
     }
 
-    const conversation = await initConversation(user.id, conversationId);
-    await agentLoop(conversation);
+    const conversation = await initConversation(
+      user.id,
+      conversationId,
+      "agent",
+      aiService.getDisplayName()
+    );
+    await agentLoop(conversation, modelConfig);
 
     outro(chalk.green.bold("\nThanks for using Agent Mode!"));
   } catch (error) {

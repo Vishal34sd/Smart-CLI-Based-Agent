@@ -17,11 +17,13 @@ import {
   enableTools,
   getEnabledTools,
   getEnabledToolNames,
+  getToolsForProvider,
   resetTools,
 } from "../../config/toolConfig.js";
 import { apiRequestSafe } from "../utils/apiClient.js";
 import { AIService } from "../ai/googleService.js";
-import { requireGeminiApiKey } from "../../lib/orbitalConfig.js";
+import { requireApiKey, hydrateApiKeyEnv } from "../../lib/orbitalConfig.js";
+import { parseModelChoice } from "../../config/aiConfig.js";
 
 marked.use(
   markedTerminal({
@@ -67,7 +69,7 @@ const getUserFromToken = async () => {
   }
 };
 
-const selectTools = async () => {
+const selectTools = async (provider = "gemini") => {
   const truncateHint = (text, maxLen = 70) => {
     if (!text) return "";
     const singleLine = String(text).replace(/\s+/g, " ").trim();
@@ -75,10 +77,19 @@ const selectTools = async () => {
     return singleLine.slice(0, Math.max(0, maxLen - 3)) + "...";
   };
 
-  const toolOptions = availableTools.map((tool) => ({
+  const providerTools = getToolsForProvider(provider);
+
+  if (providerTools.length === 0) {
+    console.log(
+      chalk.yellow(`\nNo tools available for ${provider}. AI will work without tools.\n`)
+    );
+    enableTools([]);
+    return [];
+  }
+
+  const toolOptions = providerTools.map((tool) => ({
     value: tool.id,
     label: tool.name,
-    
     hint: truncateHint(tool.description),
   }));
 
@@ -104,7 +115,7 @@ const selectTools = async () => {
       chalk.green(
         `Enabled tools:\n${selectedTools
           .map((id) => {
-            const tool = availableTools.find((t) => t.id === id);
+            const tool = providerTools.find((t) => t.id === id);
             return tool ? ` • ${tool.name}` : ` • ${id}`;
           })
           .join("\n")}`
@@ -124,7 +135,12 @@ const selectTools = async () => {
   return selectedTools;
 };
 
-const initConversation = async (userId, conversationId = null, mode = "tool") => {
+const initConversation = async (
+  userId,
+  conversationId = null,
+  mode = "tool",
+  modelDisplayName = null
+) => {
   const spinner = yoctoSpinner({ text: "Loading conversation..." }).start();
   const result = await apiRequestSafe("/api/cli/conversations/init", {
     method: "POST",
@@ -142,10 +158,14 @@ const initConversation = async (userId, conversationId = null, mode = "tool") =>
       ? `\n${chalk.gray("Active Tools:")} ${enabledToolNames.join(", ")}`
       : `\n${chalk.gray("No tools enabled")}`;
 
+  const modelLine = modelDisplayName
+    ? `\n${chalk.cyan("Model: " + modelDisplayName)}`
+    : "";
+
   const conversationInfo = boxen(
     `${chalk.bold("Conversation")}: ${conversation.title}\n${chalk.gray(
       "ID: " + conversation.id
-    )}\n${chalk.gray("Mode: " + conversation.mode)}${toolsDisplay}`,
+    )}\n${chalk.gray("Mode: " + conversation.mode)}${modelLine}${toolsDisplay}`,
     {
       padding: 1,
       margin: { top: 1, bottom: 1 },
@@ -210,8 +230,22 @@ const saveMessage = async (conversationId, role, content) => {
   });
 };
 
-const getAIResponse = async (conversationId, toolIds = []) => {
-  const spinner = yoctoSpinner({ text: "AI is thinking..." }).start();
+const getAIResponse = async (conversationId, toolIds = [], modelConfig = null) => {
+  const aiService = new AIService(modelConfig);
+  await requireApiKey(aiService.provider);
+
+  // Ensure tool state matches what the user selected
+  resetTools();
+  if (Array.isArray(toolIds)) enableTools(toolIds);
+
+  const tools = getEnabledTools(aiService.provider);
+  const enabledNames = getEnabledToolNames();
+  const toolBadge =
+    enabledNames.length > 0 ? chalk.dim(` [Tools: ${enabledNames.join(", ")}]`) : "";
+
+  const spinner = yoctoSpinner({
+    text: `${aiService.getDisplayName()} is thinking...${toolBadge}`,
+  }).start();
   let fullResponse = "";
   const toolCallsDetected = [];
 
@@ -224,20 +258,16 @@ const getAIResponse = async (conversationId, toolIds = []) => {
     const messages = Array.isArray(messageResult?.messages) ? messageResult.messages : [];
     const aiMessages = messages.map((m) => ({ role: m.role, content: m.content }));
 
-    // Ensure the API key is present in env before any tools are initialized.
-    await requireGeminiApiKey();
-
-    // Ensure tool state matches what the user selected.
-    resetTools();
-    if (Array.isArray(toolIds)) enableTools(toolIds);
-
-    const tools = getEnabledTools();
-    const aiService = new AIService();
     const result = await aiService.sendMessage(aiMessages, null, tools);
 
     spinner.stop();
     console.log("\n");
-    console.log(chalk.green.bold("Assistant: "));
+    const toolsHeader =
+      enabledNames.length > 0 ? chalk.dim(` • Tools: ${enabledNames.join(", ")}`) : "";
+    console.log(
+      chalk.green.bold(`Assistant (${aiService.getDisplayName()}):`) +
+        (toolsHeader ? ` ${toolsHeader}` : "")
+    );
     console.log(chalk.gray("-".repeat(60)));
 
     fullResponse = result?.content || "";
@@ -270,12 +300,20 @@ const getAIResponse = async (conversationId, toolIds = []) => {
     if (result?.toolResults && result.toolResults.length > 0) {
       const toolResultBox = boxen(
         result.toolResults
-          .map(
-            (tr) =>
-              `${chalk.green("✓ Tool:")} ${tr.toolName}\n${chalk.gray(
-                "Result:"
-              )} ${String(JSON.stringify(tr.result, null, 2)).slice(0, 200)}...`
-          )
+          .map((tr) => {
+            const output = tr.output ?? tr.result;
+            const resStr =
+              output === undefined
+                ? "Completed"
+                : typeof output === "object"
+                ? JSON.stringify(output, null, 2)
+                : String(output);
+            const truncated =
+              resStr.length > 200 ? `${resStr.slice(0, 200)}...` : resStr;
+            return `${chalk.green("✓ Tool:")} ${tr.toolName}\n${chalk.gray(
+              "Result:"
+            )} ${truncated}`;
+          })
           .join("\n\n"),
         {
           padding: 1,
@@ -300,7 +338,7 @@ const getAIResponse = async (conversationId, toolIds = []) => {
   }
 };
 
-const chatLoop = async (conversation, selectedToolIds = []) => {
+const chatLoop = async (conversation, selectedToolIds = [], modelConfig = null) => {
   const enabledToolNames = getEnabledToolNames();
 
   const helpText = [
@@ -308,28 +346,29 @@ const chatLoop = async (conversation, selectedToolIds = []) => {
     `• AI has access to: ${
       enabledToolNames.length > 0 ? enabledToolNames.join(", ") : "No tools"
     }`,
+    "• Tools are invoked automatically by AI when needed",
+    "• Markdown formatting is supported",
     '• Type "exit" to end conversation',
     "• Press Ctrl+C to quit anytime",
-  ]
-    .map((line) => chalk.gray(line))
-    .join("\n");
+  ].join("\n");
 
-  console.log(
-    boxen(helpText, {
-      padding: 1,
-      margin: { bottom: 1 },
-      borderStyle: "round",
-      borderColor: "gray",
-      dimBorder: true,
-    })
-  );
+  const helpBox = boxen(chalk.gray(helpText), {
+    padding: 1,
+    margin: { bottom: 1 },
+    borderStyle: "round",
+    borderColor: "gray",
+    dimBorder: true,
+  });
+  console.log(helpBox);
 
   while (true) {
     const userInput = await text({
       message: chalk.blue("Your message"),
-      placeholder: "Type your message...",
+      placeholder: "Ask something that requires tools...",
       validate(value) {
-        if (!value || value.trim().length === 0) return "Message cannot be empty";
+        if (!value || value.trim().length === 0) {
+          return "Message cannot be empty";
+        }
       },
     });
 
@@ -374,7 +413,11 @@ const chatLoop = async (conversation, selectedToolIds = []) => {
       { method: "GET" }
     );
 
-    const aiResponse = await getAIResponse(conversation.id, selectedToolIds);
+    const aiResponse = await getAIResponse(
+      conversation.id,
+      selectedToolIds,
+      modelConfig
+    );
     await saveMessage(conversation.id, "assistant", aiResponse);
 
     await updateConversationTitle(
@@ -385,7 +428,17 @@ const chatLoop = async (conversation, selectedToolIds = []) => {
   }
 };
 
-export const startToolChat = async (conversationId) => {
+export const startToolChat = async (modelConfigOrConvId = null, convId = null) => {
+  let modelConfig = null;
+  let conversationId = null;
+
+  if (typeof modelConfigOrConvId === "string") {
+    conversationId = modelConfigOrConvId;
+  } else if (modelConfigOrConvId && typeof modelConfigOrConvId === "object") {
+    modelConfig = modelConfigOrConvId;
+    conversationId = convId;
+  }
+
   try {
     intro(
       boxen(chalk.bold.cyan("Orbital AI - Tool Calling Mode"), {
@@ -395,13 +448,22 @@ export const startToolChat = async (conversationId) => {
       })
     );
 
+    const { provider } = parseModelChoice(modelConfig);
+    await hydrateApiKeyEnv(provider);
+    const aiService = new AIService(modelConfig);
+
     const user = await getUserFromToken();
 
-    const selectedToolIds = await selectTools();
+    const selectedToolIds = await selectTools(aiService.provider);
 
-    const conversation = await initConversation(user.id, conversationId, "tool");
+    const conversation = await initConversation(
+      user.id,
+      conversationId,
+      "tool",
+      aiService.getDisplayName()
+    );
 
-    await chatLoop(conversation, selectedToolIds);
+    await chatLoop(conversation, selectedToolIds, modelConfig);
 
     resetTools();
     outro(chalk.green("Thanks for using tools"));

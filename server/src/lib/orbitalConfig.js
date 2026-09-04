@@ -86,10 +86,73 @@ export const updateOrbitalConfig = async (patch = {}) => {
   return nextConfig;
 };
 
-const getGeminiApiKeyFromEnvSync = () => {
-  return typeof process.env.GOOGLE_GENERATIVE_AI_API_KEY === "string"
-    ? process.env.GOOGLE_GENERATIVE_AI_API_KEY.trim()
-    : "";
+// --- Model Preference Persistence ---
+
+export const getSelectedModel = async () => {
+  const cfg = await readOrbitalConfig();
+  let model = cfg.selectedModel || "gemini-2.5-flash";
+  if (model.includes("gemini-2.0")) model = "gemini-2.5-flash";
+  return {
+    provider: cfg.selectedProvider || "gemini",
+    model,
+  };
+};
+
+export const getSelectedModelSync = () => {
+  const cfg = readOrbitalConfigSync();
+  let model = cfg.selectedModel || "gemini-2.5-flash";
+  if (model.includes("gemini-2.0")) model = "gemini-2.5-flash";
+  return {
+    provider: cfg.selectedProvider || "gemini",
+    model,
+  };
+};
+
+export const saveSelectedModel = async ({ provider, model }) => {
+  return await updateOrbitalConfig({
+    selectedProvider: provider,
+    selectedModel: model,
+  });
+};
+
+// --- Multi-Provider API Key Management ---
+
+export const normalizeProviderName = (provider = "gemini") => {
+  const p = (provider || "gemini").toLowerCase().trim();
+  if (p === "google" || p === "gemini") return "gemini";
+  if (p === "openai") return "openai";
+  if (p === "xai" || p === "grok") return "grok";
+  return p;
+};
+
+export const getApiKeyFromEnvSync = (provider = "gemini") => {
+  const norm = normalizeProviderName(provider);
+  if (norm === "gemini") {
+    return (
+      (typeof process.env.GOOGLE_GENERATIVE_AI_API_KEY === "string" &&
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY.trim()) ||
+      (typeof process.env.GEMINI_API_KEY === "string" &&
+        process.env.GEMINI_API_KEY.trim()) ||
+      ""
+    );
+  }
+  if (norm === "openai") {
+    return (
+      (typeof process.env.OPENAI_API_KEY === "string" &&
+        process.env.OPENAI_API_KEY.trim()) ||
+      ""
+    );
+  }
+  if (norm === "grok") {
+    return (
+      (typeof process.env.XAI_API_KEY === "string" &&
+        process.env.XAI_API_KEY.trim()) ||
+      (typeof process.env.GROK_API_KEY === "string" &&
+        process.env.GROK_API_KEY.trim()) ||
+      ""
+    );
+  }
+  return "";
 };
 
 const getLegacyGeminiApiKeyFromConfigSync = () => {
@@ -113,80 +176,123 @@ const removeLegacyGeminiApiKeyFromConfig = async () => {
   return true;
 };
 
-export const hydrateGeminiApiKeyEnv = async () => {
-  const already = getGeminiApiKeyFromEnvSync();
+export const hydrateApiKeyEnv = async (provider = "gemini") => {
+  const norm = normalizeProviderName(provider);
+  const already = getApiKeyFromEnvSync(norm);
   if (already) return already;
 
-  // Primary: OS credential manager via keytar.
+  // OS credential manager via keytar
   try {
-    const fromKeytar = await getStoredApiKey();
+    const fromKeytar = await getStoredApiKey(norm);
     if (fromKeytar) {
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY = fromKeytar;
+      if (norm === "gemini") {
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY = fromKeytar;
+      } else if (norm === "openai") {
+        process.env.OPENAI_API_KEY = fromKeytar;
+      } else if (norm === "grok") {
+        process.env.XAI_API_KEY = fromKeytar;
+      }
       return fromKeytar;
     }
   } catch {
-    // ignore here; requireGeminiApiKey will surface a helpful error
+    // Ignore keytar error; will be handled in requireApiKey
   }
 
-  // One-time migration: if the key exists in legacy ~/.orbital/config.json,
-  // move it into keytar and remove it from disk.
-  const legacy = getLegacyGeminiApiKeyFromConfigSync();
-  if (legacy) {
-    await storeApiKey(legacy);
-    await removeLegacyGeminiApiKeyFromConfig().catch(() => {});
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY = legacy;
-    return legacy;
+  // One-time migration for legacy Gemini key on disk
+  if (norm === "gemini") {
+    const legacy = getLegacyGeminiApiKeyFromConfigSync();
+    if (legacy) {
+      await storeApiKey(legacy, "gemini");
+      await removeLegacyGeminiApiKeyFromConfig().catch(() => {});
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY = legacy;
+      return legacy;
+    }
   }
 
   return "";
 };
 
-export const getGeminiApiKeySync = () => getGeminiApiKeyFromEnvSync();
+export const hydrateAllApiKeysEnv = async () => {
+  await Promise.all([
+    hydrateApiKeyEnv("gemini"),
+    hydrateApiKeyEnv("openai"),
+    hydrateApiKeyEnv("grok"),
+  ]);
+};
 
-export const getGeminiApiKey = async () => {
-  const fromEnv = getGeminiApiKeyFromEnvSync();
+export const getApiKeySync = (provider = "gemini") => {
+  return getApiKeyFromEnvSync(provider);
+};
+
+export const getApiKey = async (provider = "gemini") => {
+  const norm = normalizeProviderName(provider);
+  const fromEnv = getApiKeyFromEnvSync(norm);
   if (fromEnv) return fromEnv;
-  return await hydrateGeminiApiKeyEnv();
+  return await hydrateApiKeyEnv(norm);
 };
 
-export const hasGeminiApiKeySync = () => Boolean(getGeminiApiKeyFromEnvSync());
+export const hasApiKeySync = (provider = "gemini") => {
+  return Boolean(getApiKeyFromEnvSync(provider));
+};
 
-export const requireGeminiApiKeySync = () => {
-  const apiKey = getGeminiApiKeyFromEnvSync();
+export const requireApiKeySync = (provider = "gemini") => {
+  const norm = normalizeProviderName(provider);
+  const apiKey = getApiKeyFromEnvSync(norm);
   if (!apiKey) {
+    const displayName =
+      norm === "gemini" ? "Gemini" : norm === "openai" ? "OpenAI" : "Grok (xAI)";
     const err = new Error(
-      "Gemini API key not set. Run: orbital set-key <API_KEY>"
+      `${displayName} API key not set. Run: orbital set-key --provider ${norm} <API_KEY>`
     );
-    err.code = "ORBITAL_GEMINI_API_KEY_NOT_SET";
+    err.code = `ORBITAL_${norm.toUpperCase()}_API_KEY_NOT_SET`;
     throw err;
   }
   return apiKey;
 };
 
-export const requireGeminiApiKey = async () => {
-  const apiKey = await getGeminiApiKey();
+export const requireApiKey = async (provider = "gemini") => {
+  const norm = normalizeProviderName(provider);
+  const apiKey = await getApiKey(norm);
   if (!apiKey) {
+    const displayName =
+      norm === "gemini" ? "Gemini" : norm === "openai" ? "OpenAI" : "Grok (xAI)";
     const err = new Error(
-      "Gemini API key not set. Run: orbital set-key <API_KEY>"
+      `${displayName} API key not set. Run: orbital set-key --provider ${norm} <API_KEY>`
     );
-    err.code = "ORBITAL_GEMINI_API_KEY_NOT_SET";
+    err.code = `ORBITAL_${norm.toUpperCase()}_API_KEY_NOT_SET`;
     throw err;
   }
   return apiKey;
 };
 
-export const setGeminiApiKey = async (apiKey) => {
+export const setApiKey = async (provider = "gemini", apiKey) => {
+  const norm = normalizeProviderName(provider);
   const trimmed = typeof apiKey === "string" ? apiKey.trim() : "";
   if (!trimmed) throw new Error("API key is required");
 
-  await storeApiKey(trimmed);
-  // Ensure any legacy on-disk key is removed.
-  await removeLegacyGeminiApiKeyFromConfig().catch(() => {});
+  await storeApiKey(trimmed, norm);
 
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY = trimmed;
+  if (norm === "gemini") {
+    await removeLegacyGeminiApiKeyFromConfig().catch(() => {});
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = trimmed;
+    process.env.GEMINI_API_KEY = trimmed;
+  } else if (norm === "openai") {
+    process.env.OPENAI_API_KEY = trimmed;
+  } else if (norm === "grok") {
+    process.env.XAI_API_KEY = trimmed;
+    process.env.GROK_API_KEY = trimmed;
+  }
+
   return true;
 };
 
-// Back-compat exports (no longer reads from config specifically).
-export const requireGeminiApiKeyFromConfigSync = requireGeminiApiKeySync;
+// --- Back-compatibility exports for Gemini ---
 
+export const hydrateGeminiApiKeyEnv = () => hydrateApiKeyEnv("gemini");
+export const getGeminiApiKeySync = () => getApiKeySync("gemini");
+export const getGeminiApiKey = () => getApiKey("gemini");
+export const hasGeminiApiKeySync = () => hasApiKeySync("gemini");
+export const requireGeminiApiKeySync = () => requireApiKeySync("gemini");
+export const requireGeminiApiKey = () => requireApiKey("gemini");
+export const setGeminiApiKey = (apiKey) => setApiKey("gemini", apiKey);
+export const requireGeminiApiKeyFromConfigSync = requireGeminiApiKeySync;

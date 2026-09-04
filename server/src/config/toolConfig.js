@@ -1,13 +1,19 @@
 import { google } from "@ai-sdk/google";
 import chalk from "chalk";
-import { requireGeminiApiKeySync } from "../lib/orbitalConfig.js";
+import {
+  normalizeProviderName,
+  requireApiKeySync,
+  hasApiKeySync,
+} from "../lib/orbitalConfig.js";
 
 export const availableTools = [
+  // Google Gemini Native Tools
   {
     id: "google_search",
     name: "Google Search",
     description:
       "Access the latest information using Google Search. Useful for current events, news, and real-time information",
+    provider: "gemini",
     getTool: () => google.tools.googleSearch({}),
     enabled: false,
   },
@@ -16,6 +22,7 @@ export const availableTools = [
     name: "Code Execution",
     description:
       "Generate and execute Python code to perform calculations, solve problems or provide accurate information",
+    provider: "gemini",
     getTool: () => google.tools.codeExecution({}),
     enabled: false,
   },
@@ -24,33 +31,33 @@ export const availableTools = [
     name: "URL Context",
     description:
       "Provide specific URLs that you want the model to analyse directly from the prompt. Supports up to 20 URLs per request.",
+    provider: "gemini",
     getTool: () => google.tools.urlContext({}),
     enabled: false,
   },
 ];
 
-export const getEnabledTools = () => {
+export const getToolsForProvider = (provider = "gemini") => {
+  const norm = normalizeProviderName(provider);
+  return availableTools.filter(
+    (tool) => tool.provider === "all" || tool.provider === norm
+  );
+};
+
+export const getEnabledTools = (provider = "gemini") => {
+  const norm = normalizeProviderName(provider);
   const tools = {};
 
   try {
-    const enabledToolCount = availableTools.filter((t) => t.enabled).length;
-    if (enabledToolCount > 0 && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      
-      requireGeminiApiKeySync();
-    }
+    const providerTools = getToolsForProvider(norm);
 
-    for (const toolConfig of availableTools) {
+    for (const toolConfig of providerTools) {
       if (toolConfig.enabled) {
+        if (toolConfig.provider === "gemini" && !hasApiKeySync("gemini")) {
+          requireApiKeySync("gemini");
+        }
         tools[toolConfig.id] = toolConfig.getTool();
       }
-    }
-
-    if (Object.keys(tools).length > 0) {
-      console.log(
-        chalk.gray(`[DEBUG] Enabled tools: ${Object.keys(tools).join(", ")}`)
-      );
-    } else {
-      console.log(chalk.yellow(`[DEBUG] No tools enabled`));
     }
 
     return Object.keys(tools).length > 0 ? tools : undefined;
@@ -59,10 +66,6 @@ export const getEnabledTools = () => {
       chalk.red(`[ERROR] Failed to initialize tools:`),
       error?.message || error
     );
-    console.error(
-      chalk.yellow(`Make sure you have @ai-sdk/google version 2.0+ installed`)
-    );
-    console.error(chalk.yellow(`Run: npm install @ai-sdk/google@latest`));
     return undefined;
   }
 };
@@ -72,49 +75,27 @@ export const toggleTool = (toolId) => {
 
   if (tool) {
     tool.enabled = !tool.enabled;
-    console.log(
-      chalk.gray(`[DEBUG] Tool ${toolId} toggled to ${tool.enabled}`)
-    );
     return tool.enabled;
   }
 
-  console.log(chalk.red(`[DEBUG] Tool ${toolId} not found`));
   return false;
 };
 
 export const toogleTool = toggleTool;
 
 export const enableTools = (toolIds = []) => {
-  console.log(chalk.gray(`[DEBUG] enableTools called with:`), toolIds);
-
   availableTools.forEach((tool) => {
-    const wasEnabled = tool.enabled;
     tool.enabled = toolIds.includes(tool.id);
-
-    if (tool.enabled !== wasEnabled) {
-      console.log(
-        chalk.gray(`[DEBUG] ${tool.id}: ${wasEnabled} -> ${tool.enabled}`)
-      );
-    }
   });
-
-  const enabledCount = availableTools.filter((t) => t.enabled).length;
-  console.log(
-    chalk.gray(
-      `[DEBUG] Total tools enabled: ${enabledCount} / ${availableTools.length}`
-    )
-  );
 };
 
 export const getEnabledToolNames = () => {
-  const names = availableTools.filter((t) => t.enabled).map((t) => t.name);
-  console.log(chalk.gray(`[DEBUG] getEnabledToolNames returning:`), names);
-  return names;
+  return availableTools.filter((t) => t.enabled).map((t) => t.name);
 };
 
 export const resetTools = () => {
   availableTools.forEach((tool) => {
     tool.enabled = false;
   });
-  console.log(chalk.gray(`[DEBUG] All tools have been reset (disabled)`));
 };
+

@@ -1,11 +1,19 @@
-import { google } from "@ai-sdk/google";
 import { streamText, generateObject } from "ai";
 import { config } from "../../config/googleConfig.js";
 import chalk from "chalk";
-import { requireGeminiApiKeySync } from "../../lib/orbitalConfig.js";
+import {
+  normalizeProviderName,
+  getSelectedModelSync,
+} from "../../lib/orbitalConfig.js";
+import {
+  AI_PROVIDERS,
+  createModelInstance,
+  getModelDisplayName,
+  parseModelChoice,
+} from "../../config/aiConfig.js";
 
 const MAX_RETRIES = 3;
-const BASE_DELAY_MS = 5000; // 5 seconds
+const BASE_DELAY_MS = 3000; // 3 seconds
 
 const isRateLimitError = (error) => {
   if (!error) return false;
@@ -23,12 +31,30 @@ const isRateLimitError = (error) => {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class AIService {
-  constructor() {
-    const apiKey = requireGeminiApiKeySync();
+  constructor(modelConfig = null) {
+    let resolved;
 
-    this.model = google(config.model, {
-      apiKey,
-    });
+    if (modelConfig) {
+      resolved = parseModelChoice(modelConfig);
+    } else {
+      const saved = getSelectedModelSync();
+      const provider = process.env.ORBITAL_PROVIDER || saved?.provider || "gemini";
+      const model =
+        process.env.ORBITAL_MODEL ||
+        saved?.model ||
+        AI_PROVIDERS[normalizeProviderName(provider)]?.defaultModel ||
+        "gemini-2.5-flash";
+      resolved = { provider: normalizeProviderName(provider), model };
+
+    }
+
+    this.provider = resolved.provider;
+    this.modelName = resolved.model;
+    this.model = createModelInstance(this.provider, this.modelName);
+  }
+
+  getDisplayName() {
+    return getModelDisplayName(this.provider, this.modelName);
   }
 
   async sendMessage(messages, onChunk, tools = undefined, onToolCall = null) {
@@ -45,22 +71,28 @@ export class AIService {
         if (tools && Object.keys(tools).length > 0) {
           streamConfig.tools = tools;
           streamConfig.maxSteps = 5;
-          if (attempt === 1) {
-            console.log(
-              chalk.gray(
-                `[DEBUG] Tools enabled: ${Object.keys(tools).join(", ")}`
-              )
-            );
-          }
         }
 
         const result = await streamText(streamConfig);
 
         let fullResponse = "";
 
-        for await (const chunk of result.textStream) {
-          fullResponse += chunk;
-          if (onChunk) onChunk(chunk);
+        for await (const part of result.fullStream) {
+          if (part.type === "text-delta") {
+            const chunk = part.text ?? part.textDelta ?? "";
+            fullResponse += chunk;
+            if (onChunk) onChunk(chunk);
+          }
+        }
+
+
+
+        if (!fullResponse) {
+          try {
+            fullResponse = (await result.text) || "";
+          } catch {
+            // ignore if result.text is not available
+          }
         }
 
         const toolCalls = [];
@@ -91,6 +123,20 @@ export class AIService {
           }
         }
 
+        if (!fullResponse && toolResults.length > 0) {
+          fullResponse = toolResults
+            .map((tr) => {
+              const output = tr.output ?? tr.result;
+              const resStr =
+                typeof output === "object"
+                  ? JSON.stringify(output)
+                  : String(output);
+              return `Tool ${tr.toolName} output: ${resStr}`;
+            })
+            .join("\n");
+        }
+
+
         return {
           content: fullResponse,
           finishReason: result.finishReason,
@@ -107,35 +153,40 @@ export class AIService {
           const delaySec = Math.round(delayMs / 1000);
           console.log(
             chalk.yellow(
-              `\n⚠ Rate limit hit (429). Retrying in ${delaySec}s... (attempt ${attempt}/${MAX_RETRIES})`
+              `\n⚠ Rate limit hit (429) on ${this.getDisplayName()}. Retrying in ${delaySec}s... (attempt ${attempt}/${MAX_RETRIES})`
             )
           );
           await sleep(delayMs);
           continue;
         }
 
-        // Provide an actionable message for rate-limit errors.
+        // Provide actionable provider-specific error messages
         if (isRateLimitError(error)) {
+          const provInfo = AI_PROVIDERS[this.provider];
           console.error(
             chalk.red(
-              "\n✖ Gemini API quota exhausted. All retry attempts failed."
+              `\n✖ ${this.getDisplayName()} rate limit / quota exhausted. All retry attempts failed.`
             )
           );
           console.error(
             chalk.yellow(
-              "  Possible fixes:\n" +
-                "  1. Wait a few minutes and try again (free-tier resets per minute)\n" +
-                "  2. Check your quota: https://ai.google.dev/gemini-api/docs/rate-limits\n" +
-                "  3. Upgrade your Gemini API plan for higher limits\n" +
-                "  4. Use a different API key with available quota"
+              `  Possible fixes:\n` +
+                `  1. Wait a moment and try again\n` +
+                `  2. Check your quota & billing at: ${provInfo?.docsUrl || "provider portal"}\n` +
+                `  3. Switch to another model or update your API key: orbital set-key --provider ${this.provider} <KEY>`
             )
           );
         } else {
+          const detailedMsg =
+            error?.data?.error?.message ||
+            error?.message ||
+            error;
           console.error(
-            chalk.red("AI Service Error:"),
-            error?.message || error
+            chalk.red(`AI Service Error (${this.getDisplayName()}):`),
+            detailedMsg
           );
         }
+
 
         throw error;
       }
@@ -158,11 +209,10 @@ export class AIService {
       return result.object;
     } catch (error) {
       console.log(
-        chalk.red("AI Structured Generation Error:"),
+        chalk.red(`AI Structured Generation Error (${this.getDisplayName()}):`),
         error?.message || error
       );
       throw error;
     }
   }
 }
-

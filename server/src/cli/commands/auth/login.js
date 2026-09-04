@@ -11,7 +11,6 @@ import { fileURLToPath } from "url";
 import { getStoredToken, isTokenExpired, storeToken ,TOKEN_FILE } from "../../../lib/token.js";
 import { API_BASE } from "../../../config/api.js";
 import { apiRequestSafe } from "../../utils/apiClient.js";
-import { requireGeminiApiKey } from "../../../lib/orbitalConfig.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -93,12 +92,7 @@ const resolveClientId = async (cliClientId) => {
 
 
 export const loginAction = async (cmdOptions) => {
-  try {
-    await requireGeminiApiKey();
-  } catch {
-    console.log(chalk.red("Gemini API key not set. Run: orbital set-key <API_KEY>"));
-    process.exit(1);
-  }
+
 
   const schema = z.object({
     serverUrl: z.string().optional(),
