@@ -25,13 +25,13 @@ Start Orbital:
 ## 📸 Project Screenshots
 
 ### 🔐 Orbital Login Screen
-![Orbital Login Screen](https://res.cloudinary.com/damw21f39/image/upload/v1773569580/pic1_u0wu0y.png)
+![Orbital Login Screen](https://ik.imagekit.io/55z5toj5e/Orbital-CLI/orbital_login.png?updatedAt=1788983014376)
 
 ### 🛠️ Orbital Wakeup – Tools Loaded
-![Orbital Wakeup](https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic2_mvnpiu.png)
+![Orbital Wakeup](https://ik.imagekit.io/55z5toj5e/Orbital-CLI/orbital_wakeup.png?updatedAt=1788982937600)
 
 ### 🤖 Agentic Mode
-![Agentic Mode](https://res.cloudinary.com/damw21f39/image/upload/v1773569581/pic3_bvidmp.png)
+![Agentic Mode](https://ik.imagekit.io/55z5toj5e/Orbital-CLI/agentic_mode.png?updatedAt=1788982970736)
 
 ------------------------------------------------------------------------
 
