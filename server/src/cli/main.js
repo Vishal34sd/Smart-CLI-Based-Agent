@@ -12,7 +12,10 @@ import {setkey} from "./commands/config/setkey.js"
 import {launch} from "./commands/General/openApp.js"
 import {search} from "./commands/General/searchYoutube.js"
 import {play} from "./commands/General/playSong.js"
-import {packageJson} from "./package.json";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const packageJson = require("../../../package.json");
 
 const main = async()=>{
 
